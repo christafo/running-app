@@ -262,6 +262,27 @@ const ImportRuns = () => {
                                 </select>
                             </div>
                         ))}
+
+                        {/* Date Format Selection */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem', padding: '1rem', backgroundColor: '#fff7ed', borderRadius: '0.5rem', border: '1px solid #ffedd5' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', fontWeight: 'bold', color: '#c2410c' }}>
+                                <Info size={16} /> Date Format in CSV
+                            </div>
+                            <p style={{ fontSize: '0.75rem', color: '#9a3412', margin: 0 }}>
+                                Tell us how dates look in your file to ensure week numbers (currently incorrect) are fixed.
+                            </p>
+                            <select
+                                value={dateFormat}
+                                onChange={(e) => setDateFormat(e.target.value)}
+                                style={{ padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #fdba74', backgroundColor: 'white' }}
+                            >
+                                <option value="MM/dd/yyyy">MM/DD/YYYY (US - e.g. 12/06 is Dec 6)</option>
+                                <option value="dd/MM/yyyy">DD/MM/YYYY (Intl - e.g. 12/06 is June 12)</option>
+                                <option value="yyyy-MM-dd">YYYY-MM-DD (Standard)</option>
+                                <option value="dd-MM-yyyy">DD-MM-YYYY</option>
+                                <option value="MM-dd-yyyy">MM-DD-YYYY</option>
+                            </select>
+                        </div>
                     </div>
 
                     <button

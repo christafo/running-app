@@ -1,7 +1,7 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRuns } from '../context/RunContext';
 import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet';
+import { useState, useEffect } from 'react';
 import { Map, ExternalLink, Plus, Loader2, Edit2, Check, X, MapPin } from 'lucide-react';
 import L from 'leaflet';
 
@@ -16,9 +16,26 @@ L.Icon.Default.mergeOptions({
 // Component to fit map bounds to route
 const MapBounds = ({ coordinates }) => {
     const map = useMap();
-    if (coordinates && coordinates.length > 0) {
-        map.fitBounds(coordinates, { padding: [20, 20] });
-    }
+    useEffect(() => {
+        if (coordinates && coordinates.length > 0) {
+            map.fitBounds(coordinates, { padding: [20, 20] });
+            // Force a resize check after bounds are fit
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 100);
+        }
+    }, [coordinates, map]);
+    return null;
+};
+
+// Component to force map resize on initial load
+const ResizeMap = () => {
+    const map = useMap();
+    useEffect(() => {
+        setTimeout(() => {
+            map.invalidateSize();
+        }, 200);
+    }, [map]);
     return null;
 };
 
@@ -471,13 +488,13 @@ const RoutesPage = () => {
 
                                     if (coords && Array.isArray(coords) && coords.length > 0) {
                                         return (
-                                            <div style={{ height: '300px', width: '100%', position: 'relative' }}>
+                                            <div style={{ height: '300px', width: '100%', position: 'relative', overflow: 'hidden' }}>
                                                 <MapContainer
-                                                    key={route.id}
+                                                    key={`${route.id}-${coords.length}`}
                                                     center={coords[0]}
                                                     zoom={13}
                                                     scrollWheelZoom={false}
-                                                    style={{ height: '300px', width: '100%' }}
+                                                    style={{ height: '300px', width: '100%', minHeight: '300px' }}
                                                     dragging={true}
                                                     zoomControl={true}
                                                 >
@@ -492,6 +509,7 @@ const RoutesPage = () => {
                                                         opacity={0.8}
                                                     />
                                                     <MapBounds coordinates={coords} />
+                                                    <ResizeMap />
                                                 </MapContainer>
                                             </div>
                                         );
