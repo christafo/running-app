@@ -16,6 +16,7 @@ export const RunProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [runs, setRuns] = useState([]);
     const [routes, setRoutes] = useState([]);
+    const [dbHealth, setDbHealth] = useState({ ok: true, missingColumns: [] });
 
     // Auth State Listener
     useEffect(() => {
@@ -54,7 +55,19 @@ export const RunProvider = ({ children }) => {
                 .order('date', { ascending: false });
 
             if (error) throw error;
-            if (data) setRuns(data);
+            if (data) {
+                setRuns(data);
+
+                // Health Check for Runs
+                if (data.length > 0) {
+                    const sample = data[0];
+                    const needed = ['effort', 'total_seconds'];
+                    const missing = needed.filter(col => !(col in sample));
+                    if (missing.length > 0) {
+                        setDbHealth(prev => ({ ok: false, missingColumns: [...new Set([...prev.missingColumns, ...missing.map(m => `${m} (runs table)`)])] }));
+                    }
+                }
+            }
         } catch (error) {
             console.error('Error fetching runs:', error.message);
         }
@@ -64,14 +77,23 @@ export const RunProvider = ({ children }) => {
         try {
             const { data, error } = await supabase
                 .from('routes')
-                .select('*');
+                .select('*')
+                .limit(1);
 
             if (error) throw error;
-            // If user has no custom routes, use initial ones locally, 
-            // OR we could insert INITIAL_ROUTES into the DB for them? 
-            // For now, let's just append API routes to INITIAL_ROUTES or just use API if it has any.
+
+            // Health Check for Routes
             if (data && data.length > 0) {
-                setRoutes(data);
+                const sample = data[0];
+                if (!('coordinates' in sample)) {
+                    setDbHealth(prev => ({ ok: false, missingColumns: [...new Set([...prev.missingColumns, 'coordinates (routes table)'])] }));
+                }
+            }
+
+            // Real fetch (all)
+            const { data: allData } = await supabase.from('routes').select('*');
+            if (allData && allData.length > 0) {
+                setRoutes(allData);
             } else {
                 setRoutes(INITIAL_ROUTES);
             }
@@ -271,6 +293,7 @@ export const RunProvider = ({ children }) => {
         isLoading,
         runs,
         routes,
+        dbHealth,
         addRun,
         deleteRun,
         addRoute,

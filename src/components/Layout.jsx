@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, History, PlusCircle, Map, TrendingUp, LogOut } from 'lucide-react';
 import { MonitorPlay } from 'lucide-react'; // Placeholder icon for header
+import DbHealthBanner from './DbHealthBanner';
 
 const Layout = ({ children }) => {
     const navigate = useNavigate();
@@ -122,6 +123,7 @@ const Layout = ({ children }) => {
 
                 {/* Main Content */}
                 <main style={{ flex: 1, padding: '0 1rem 2rem 1rem' }}>
+                    <DbHealthBanner />
                     {children}
                 </main>
 

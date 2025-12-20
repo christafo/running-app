@@ -86,11 +86,15 @@ const ImportRuns = () => {
                 }
             }
 
-            // 2. Try common formats as fallback (Safest list)
+            // 2. Try common formats as fallback (Safest list, but prioritize user's choice of separators)
             if (!parsedDate || !isValid(parsedDate)) {
-                // If the user's date has slashes or dashes, try common variations
-                const commonFormats = ['yyyy-MM-dd', 'dd/MM/yyyy', 'MM/dd/yyyy', 'dd/MM/yy', 'MM/dd/yy', 'dd-MM-yyyy', 'dd-MM-yy'];
-                for (const fmt of commonFormats) {
+                // Determine order based on user's primary choice
+                const isUS = dateFormat.startsWith('MM');
+                const variations = isUS
+                    ? ['MM/dd/yyyy', 'MM-dd-yyyy', 'MM/dd/yy', 'MM-dd-yy', 'yyyy-MM-dd', 'dd/MM/yyyy', 'dd-MM-yyyy']
+                    : ['dd/MM/yyyy', 'dd-MM-yyyy', 'dd/MM/yy', 'dd-MM-yy', 'yyyy-MM-dd', 'MM/dd/yyyy', 'MM-dd-yyyy'];
+
+                for (const fmt of variations) {
                     const d = parse(dateStr, fmt, new Date());
                     if (isValid(d)) {
                         parsedDate = d;
@@ -155,9 +159,13 @@ const ImportRuns = () => {
                         updated.dateISO = rigorousDate.toISOString().split('T')[0];
                     } else {
                         // Try fallback logic same as initial process
-                        const commonFormats = ['yyyy-MM-dd', 'dd/MM/yyyy', 'MM/dd/yyyy', 'dd/MM/yy', 'MM/dd/yy', 'dd-MM-yyyy', 'dd-MM-yy'];
+                        const isUS = dateFormat.startsWith('MM');
+                        const variations = isUS
+                            ? ['MM/dd/yyyy', 'MM-dd-yyyy', 'MM/dd/yy', 'MM-dd-yy', 'yyyy-MM-dd', 'dd/MM/yyyy', 'dd-MM-yyyy']
+                            : ['dd/MM/yyyy', 'dd-MM-yyyy', 'dd/MM/yy', 'dd-MM-yy', 'yyyy-MM-dd', 'MM/dd/yyyy', 'MM-dd-yyyy'];
+
                         let found = false;
-                        for (const fmt of commonFormats) {
+                        for (const fmt of variations) {
                             const d = parse(value, fmt, new Date());
                             if (isValid(d)) {
                                 updated.dateISO = d.toISOString().split('T')[0];
