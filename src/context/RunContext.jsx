@@ -177,7 +177,7 @@ export const RunProvider = ({ children }) => {
 
             if (error) throw error;
             if (data) {
-                setRoutes(prev => [...prev, data]);
+                setRoutes(prev => [data, ...prev]);
             }
         } catch (error) {
             console.error('Error adding route:', error);
