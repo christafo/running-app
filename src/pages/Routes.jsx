@@ -86,12 +86,20 @@ const RoutesPage = () => {
         const routeRuns = runs.filter(r => r.route_id === routeId);
         if (routeRuns.length === 0) return null;
 
-        const totalRuns = routeRuns.length;
-        const lastRun = routeRuns[0]; // Assumes runs are sorted by date desc in Context
+        // Ensure total_seconds is calculated for all runs if missing (fallback for legacy or manual data)
+        const processedRuns = routeRuns.map(run => {
+            if (!run.total_seconds || run.total_seconds <= 0) {
+                const { parseDurationToSeconds } = require('../utils/calculations');
+                return { ...run, total_seconds: parseDurationToSeconds(run.duration) };
+            }
+            return run;
+        });
+
+        const totalRuns = processedRuns.length;
+        const lastRun = processedRuns[0];
 
         // Best Time (lowest total_seconds)
-        // Filter out runs with 0 seconds or invalid data
-        const validRuns = routeRuns.filter(r => r.total_seconds > 0);
+        const validRuns = processedRuns.filter(r => r.total_seconds > 0);
         const bestRun = validRuns.length > 0
             ? validRuns.reduce((prev, curr) => (prev.total_seconds < curr.total_seconds ? prev : curr))
             : null;

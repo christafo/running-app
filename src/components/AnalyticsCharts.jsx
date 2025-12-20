@@ -165,47 +165,73 @@ const AnalyticsCharts = ({ runs }) => {
         <div>
             {/* Weekly Analysis Cards */}
             {trends && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
 
-                    {/* Distance Card */}
-                    <div style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
-                        <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>This Week Distance</div>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{trends.dist.current} km</span>
-                            {trends.dist.hasPrev ? (
-                                <span style={{
-                                    fontSize: '0.875rem',
-                                    fontWeight: '600',
-                                    color: trends.dist.positive ? '#16a34a' : '#ef4444',
-                                    display: 'flex', alignItems: 'center'
-                                }}>
-                                    {trends.dist.diff > 0 ? '+' : ''}{trends.dist.diff.toFixed(1)} km
-                                    {trends.dist.positive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                                </span>
-                            ) : (
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>First week</span>
-                            )}
+                    {/* Distance Summary Card */}
+                    <div style={{ backgroundColor: 'white', padding: '1.25rem', borderRadius: '1rem', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
+                            <ArrowUpRight size={14} /> Weekly Distance Summary
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                            <div>
+                                <div style={{ fontSize: '1.875rem', fontWeight: '800', color: 'var(--primary-color)' }}>{trends.dist.current} <span style={{ fontSize: '1rem', fontWeight: '500' }}>km</span></div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>this week</div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                {trends.dist.hasPrev ? (
+                                    <div style={{
+                                        backgroundColor: trends.dist.positive ? '#ecfdf5' : '#fef2f2',
+                                        color: trends.dist.positive ? '#059669' : '#dc2626',
+                                        padding: '0.25rem 0.6rem',
+                                        borderRadius: '2rem',
+                                        fontSize: '0.875rem',
+                                        fontWeight: '700',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.25rem'
+                                    }}>
+                                        {trends.dist.diff >= 0 ? '+' : ''}{trends.dist.diff.toFixed(1)} km
+                                        {trends.dist.positive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                                    </div>
+                                ) : (
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>Baseline Week</div>
+                                )}
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>vs. last week</div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Pace Card */}
-                    <div style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
-                        <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Avg Pace (Week)</div>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{trends.pace.current}</span>
-                            {trends.pace.hasPrev ? (
-                                <span style={{
-                                    fontSize: '0.875rem',
-                                    fontWeight: '600',
-                                    color: trends.pace.positive ? '#16a34a' : '#ef4444',
-                                    display: 'flex', alignItems: 'center'
-                                }}>
-                                    {trends.pace.diff <= 0 ? '' : '+'}{Math.round(Math.abs(trends.pace.diff))}s/km
-                                    {trends.pace.positive ? <ArrowDownRight size={14} /> : <ArrowUpRight size={14} />}
-                                </span>
-                            ) : (
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>First week</span>
-                            )}
+                    {/* Pace Summary Card */}
+                    <div style={{ backgroundColor: 'white', padding: '1.25rem', borderRadius: '1rem', border: '1px solid var(--border-color)', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
+                            <Minus size={14} /> Weekly Pace Summary
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                            <div>
+                                <div style={{ fontSize: '1.875rem', fontWeight: '800', color: '#ec4899' }}>{trends.pace.current} <span style={{ fontSize: '1rem', fontWeight: '500' }}>/km</span></div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>avg this week</div>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                {trends.pace.hasPrev ? (
+                                    <div style={{
+                                        backgroundColor: trends.pace.positive ? '#ecfdf5' : '#fef2f2',
+                                        color: trends.pace.positive ? '#059669' : '#dc2626',
+                                        padding: '0.25rem 0.6rem',
+                                        borderRadius: '2rem',
+                                        fontSize: '0.875rem',
+                                        fontWeight: '700',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.25rem'
+                                    }}>
+                                        {trends.pace.diff <= 0 ? '-' : '+'}{Math.round(Math.abs(trends.pace.diff))}s
+                                        {trends.pace.positive ? <ArrowDownRight size={14} /> : <ArrowUpRight size={14} />}
+                                    </div>
+                                ) : (
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>Baseline Week</div>
+                                )}
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>vs. last week</div>
+                            </div>
                         </div>
                     </div>
                 </div>

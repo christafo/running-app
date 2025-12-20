@@ -1,10 +1,12 @@
 import { useRuns } from '../context/RunContext';
-import { Trash2, Upload } from 'lucide-react';
+import { Trash2, Upload, Edit3, Check, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getWeekIdentifier } from '../utils/dateUtils';
+import { useState } from 'react';
 
 const RunHistory = () => {
     const { runs, routes, deleteRun, updateRun } = useRuns();
+    const [editingCell, setEditingCell] = useState(null); // { runId, field }
 
     const getRouteName = (routeId) => {
         const route = routes.find(r => r.id === routeId);
@@ -13,15 +15,25 @@ const RunHistory = () => {
 
     const handleRouteChange = async (runId, newRouteId) => {
         await updateRun(runId, { route_id: newRouteId });
+        setEditingCell(null);
     };
 
     const handleEffortChange = async (runId, newEffort) => {
         await updateRun(runId, { effort: newEffort });
+        setEditingCell(null);
     };
 
     const getWeekNumber = (dateString) => {
         return getWeekIdentifier(dateString);
     };
+
+    const effortLevels = [
+        { value: '1', label: '😌 Very Easy' },
+        { value: '2', label: '🙂 Easy' },
+        { value: '3', label: '😐 Moderate' },
+        { value: '4', label: '😓 Hard' },
+        { value: '5', label: '🥵 Very Hard' }
+    ];
 
     return (
         <div>
@@ -35,7 +47,7 @@ const RunHistory = () => {
             </div>
 
             <div className="card" style={{ overflowX: 'auto', padding: '0' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
                     <thead>
                         <tr style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--background-color)' }}>
                             <th style={{ textAlign: 'left', padding: '1rem', fontWeight: '600', color: 'var(--secondary-color)' }}>Week</th>
@@ -60,52 +72,79 @@ const RunHistory = () => {
                                 <tr key={run.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                     <td style={{ padding: '0.75rem' }}>{getWeekNumber(run.date)}</td>
                                     <td style={{ padding: '0.75rem' }}>{new Date(run.date.includes('T') ? run.date : run.date + 'T00:00:00').toLocaleDateString()}</td>
-                                    <td style={{ padding: '0.75rem', minWidth: '200px' }}>
-                                        <select
-                                            value={run.route_id || ''}
-                                            onChange={(e) => handleRouteChange(run.id, e.target.value)}
-                                            style={{
-                                                width: '100%',
-                                                padding: '0.4rem',
-                                                border: '1px solid var(--border-color)',
-                                                borderRadius: '0.4rem',
-                                                fontSize: '0.85rem',
-                                                backgroundColor: 'transparent'
-                                            }}
-                                        >
-                                            <option value="">Select Route...</option>
-                                            {routes.map(r => (
-                                                <option key={r.id} value={r.id}>{r.name}</option>
-                                            ))}
-                                        </select>
+
+                                    {/* Route Cell */}
+                                    <td
+                                        style={{ padding: '0.75rem', minWidth: '200px', cursor: 'pointer', position: 'relative' }}
+                                        onClick={() => !editingCell && setEditingCell({ runId: run.id, field: 'route_id' })}
+                                    >
+                                        {editingCell?.runId === run.id && editingCell?.field === 'route_id' ? (
+                                            <select
+                                                autoFocus
+                                                value={run.route_id || ''}
+                                                onChange={(e) => handleRouteChange(run.id, e.target.value)}
+                                                onBlur={() => setTimeout(() => setEditingCell(null), 200)}
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '0.4rem',
+                                                    border: '1px solid var(--primary-color)',
+                                                    borderRadius: '0.4rem',
+                                                    fontSize: '0.85rem'
+                                                }}
+                                            >
+                                                <option value="">Select Route...</option>
+                                                {routes.map(r => (
+                                                    <option key={r.id} value={r.id}>{r.name}</option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'space-between' }}>
+                                                <span style={{ color: run.route_id ? 'inherit' : 'var(--text-secondary)', fontStyle: run.route_id ? 'normal' : 'italic' }}>
+                                                    {getRouteName(run.route_id)}
+                                                </span>
+                                                <Edit3 size={14} style={{ color: 'var(--text-secondary)', opacity: 0.5 }} />
+                                            </div>
+                                        )}
                                     </td>
+
                                     <td style={{ padding: '0.75rem', textAlign: 'right' }}>{Number(run.distance).toFixed(2)}</td>
                                     <td style={{ padding: '0.75rem', textAlign: 'right' }}>{run.duration}</td>
                                     <td style={{ padding: '0.75rem', textAlign: 'right' }}>{run.pace}</td>
-                                    <td style={{ padding: '0.75rem', textAlign: 'center' }}>
-                                        <select
-                                            value={run.effort || ''}
-                                            onChange={(e) => handleEffortChange(run.id, e.target.value)}
-                                            style={{
-                                                padding: '0.4rem',
-                                                border: '1px solid var(--border-color)',
-                                                borderRadius: '0.4rem',
-                                                fontSize: '0.85rem',
-                                                backgroundColor: 'transparent',
-                                                cursor: 'pointer'
-                                            }}
-                                        >
-                                            <option value="">-</option>
-                                            <option value="1">😌 Very Easy</option>
-                                            <option value="2">🙂 Easy</option>
-                                            <option value="3">😐 Moderate</option>
-                                            <option value="4">😓 Hard</option>
-                                            <option value="5">🥵 Very Hard</option>
-                                        </select>
+
+                                    {/* Effort Cell */}
+                                    <td
+                                        style={{ padding: '0.75rem', textAlign: 'center', cursor: 'pointer' }}
+                                        onClick={() => !editingCell && setEditingCell({ runId: run.id, field: 'effort' })}
+                                    >
+                                        {editingCell?.runId === run.id && editingCell?.field === 'effort' ? (
+                                            <select
+                                                autoFocus
+                                                value={run.effort || ''}
+                                                onChange={(e) => handleEffortChange(run.id, e.target.value)}
+                                                onBlur={() => setTimeout(() => setEditingCell(null), 200)}
+                                                style={{
+                                                    padding: '0.4rem',
+                                                    border: '1px solid var(--primary-color)',
+                                                    borderRadius: '0.4rem',
+                                                    fontSize: '0.85rem'
+                                                }}
+                                            >
+                                                <option value="">-</option>
+                                                {effortLevels.map(lvl => (
+                                                    <option key={lvl.value} value={lvl.value}>{lvl.label}</option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center' }}>
+                                                <span>{run.effort ? effortLevels.find(l => l.value === String(run.effort))?.label.split(' ')[0] : '-'}</span>
+                                                <Edit3 size={12} style={{ color: 'var(--text-secondary)', opacity: 0.4 }} />
+                                            </div>
+                                        )}
                                     </td>
+
                                     <td style={{ padding: '0.75rem', textAlign: 'center' }}>
                                         <button
-                                            onClick={() => deleteRun(run.id)}
+                                            onClick={(e) => { e.stopPropagation(); deleteRun(run.id); }}
                                             style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
                                             title="Delete Run"
                                         >
