@@ -58,9 +58,9 @@ const RunHistory = () => {
                         ) : (
                             runs.map(run => (
                                 <tr key={run.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                    <td style={{ padding: '1rem' }}>{getWeekNumber(run.date)}</td>
-                                    <td style={{ padding: '1rem' }}>{new Date(run.date.includes('T') ? run.date : run.date + 'T00:00:00').toLocaleDateString()}</td>
-                                    <td style={{ padding: '1rem' }}>
+                                    <td style={{ padding: '0.75rem' }}>{getWeekNumber(run.date)}</td>
+                                    <td style={{ padding: '0.75rem' }}>{new Date(run.date.includes('T') ? run.date : run.date + 'T00:00:00').toLocaleDateString()}</td>
+                                    <td style={{ padding: '0.75rem' }}>
                                         <select
                                             value={run.route_id || ''}
                                             onChange={(e) => handleRouteChange(run.id, e.target.value)}
@@ -79,34 +79,31 @@ const RunHistory = () => {
                                             ))}
                                         </select>
                                     </td>
-                                    <td style={{ padding: '1rem', textAlign: 'right' }}>{Number(run.distance).toFixed(2)}</td>
-                                    <td style={{ padding: '1rem', textAlign: 'right' }}>{run.duration}</td>
-                                    <td style={{ padding: '1rem', textAlign: 'right' }}>{run.pace}</td>
-                                    <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
-                                            {[1, 2, 3, 4, 5].map(level => (
-                                                <button
-                                                    key={level}
-                                                    onClick={() => handleEffortChange(run.id, level)}
-                                                    style={{
-                                                        background: 'none',
-                                                        border: 'none',
-                                                        padding: '2px',
-                                                        fontSize: '1.2rem',
-                                                        cursor: 'pointer',
-                                                        opacity: run.effort === level ? 1 : 0.3,
-                                                        transform: run.effort === level ? 'scale(1.2)' : 'scale(1)',
-                                                        transition: 'all 0.2s',
-                                                        filter: run.effort === level ? 'none' : 'grayscale(80%)'
-                                                    }}
-                                                    title={['Very Easy', 'Easy', 'Moderate', 'Hard', 'Very Hard'][level - 1]}
-                                                >
-                                                    {['😌', '🙂', '😐', '😓', '🥵'][level - 1]}
-                                                </button>
-                                            ))}
-                                        </div>
+                                    <td style={{ padding: '0.75rem', textAlign: 'right' }}>{Number(run.distance).toFixed(2)}</td>
+                                    <td style={{ padding: '0.75rem', textAlign: 'right' }}>{run.duration}</td>
+                                    <td style={{ padding: '0.75rem', textAlign: 'right' }}>{run.pace}</td>
+                                    <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                                        <select
+                                            value={run.effort || ''}
+                                            onChange={(e) => handleEffortChange(run.id, e.target.value)}
+                                            style={{
+                                                padding: '0.4rem',
+                                                border: '1px solid var(--border-color)',
+                                                borderRadius: '0.4rem',
+                                                fontSize: '0.85rem',
+                                                backgroundColor: 'transparent',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            <option value="">-</option>
+                                            <option value="1">😌 Very Easy</option>
+                                            <option value="2">🙂 Easy</option>
+                                            <option value="3">😐 Moderate</option>
+                                            <option value="4">😓 Hard</option>
+                                            <option value="5">🥵 Very Hard</option>
+                                        </select>
                                     </td>
-                                    <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                    <td style={{ padding: '0.75rem', textAlign: 'center' }}>
                                         <button
                                             onClick={() => deleteRun(run.id)}
                                             style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}

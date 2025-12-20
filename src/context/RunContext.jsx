@@ -188,7 +188,7 @@ export const RunProvider = ({ children }) => {
                 .update(payload)
                 .eq('id', runId)
                 .select()
-                .single();
+                .maybeSingle();
 
             if (error) throw error;
             if (data) {
