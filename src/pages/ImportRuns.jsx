@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
-import { parse, isValid } from 'date-fns';
+import { parse, isValid, format } from 'date-fns';
 import { calculatePace, parseDurationToSeconds } from '../utils/calculations';
 import { useRuns } from '../context/RunContext';
 import { getWeekIdentifier } from '../utils/dateUtils';
@@ -368,6 +368,12 @@ const ImportRuns = () => {
                                         </td>
                                         <td style={{ padding: '0.75rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                                             {row.status === 'valid' ? getWeekIdentifier(row.dateISO) : '-'}
+                                        </td>
+                                        <td style={{ padding: '0.75rem', fontSize: '0.875rem' }}>
+                                            <div style={{ fontWeight: 'bold', color: row.datePretty === 'Invalid' ? '#ef4444' : '#1e293b' }}>
+                                                {row.datePretty}
+                                            </div>
+                                            <div style={{ fontSize: '0.7rem', color: '#64748b' }}>({row.dateDisplay})</div>
                                         </td>
                                         <td style={{ padding: '0.75rem' }}>
                                             <input

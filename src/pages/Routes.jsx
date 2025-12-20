@@ -428,9 +428,9 @@ const RoutesPage = () => {
                                     >
                                         Log Run
                                     </button>
-                                    {route.mapLink && (
+                                    {route.map_link && (
                                         <a
-                                            href={route.mapLink}
+                                            href={route.map_link}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="btn"
@@ -539,9 +539,10 @@ const RoutesPage = () => {
                                         );
                                     }
                                     return (
-                                        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', backgroundColor: '#f1f5f9' }}>
-                                            <Map size={32} style={{ marginBottom: '1rem', opacity: 0.3 }} />
-                                            <span style={{ fontSize: '0.875rem' }}>No GPS data available</span>
+                                        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', backgroundColor: '#f1f5f9', padding: '1rem', textAlign: 'center' }}>
+                                            <MapPin size={32} style={{ marginBottom: '1rem', opacity: 0.3 }} />
+                                            <span style={{ fontSize: '0.875rem', fontWeight: 'bold' }}>No Map Data</span>
+                                            <p style={{ fontSize: '0.75rem', marginTop: '0.5rem' }}>Upload a GPX file when adding a new route to see it here.</p>
                                         </div>
                                     );
                                 })()}

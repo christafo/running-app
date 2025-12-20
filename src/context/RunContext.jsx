@@ -4,11 +4,11 @@ import { supabase } from '../supabaseClient';
 const RunContext = createContext();
 
 const INITIAL_ROUTES = [
-    { id: '1', name: 'Freshmarket > Marina Loop', distance: 4.39, mapLink: 'https://onthegomap.com/s/j26o9f49' },
-    { id: '2', name: 'Kennedy Park > Marina Loop', distance: 6.4, mapLink: 'https://onthegomap.com/s/919f3ltf' },
-    { id: '3', name: 'Main highway > Ingrham Park', distance: 8.22, mapLink: 'https://onthegomap.com/s/domqkvq8' },
-    { id: '4', name: 'Freshmarket > Marina > Main', distance: 6.15, mapLink: '' },
-    { id: '5', name: 'Freshmarket > Marina > Grand', distance: 5.07, mapLink: '' },
+    { id: '1', name: 'Freshmarket > Marina Loop', distance: 4.39, map_link: 'https://onthegomap.com/s/j26o9f49' },
+    { id: '2', name: 'Kennedy Park > Marina Loop', distance: 6.4, map_link: 'https://onthegomap.com/s/919f3ltf' },
+    { id: '3', name: 'Main highway > Ingrham Park', distance: 8.22, map_link: 'https://onthegomap.com/s/domqkvq8' },
+    { id: '4', name: 'Freshmarket > Marina > Main', distance: 6.15, map_link: '' },
+    { id: '5', name: 'Freshmarket > Marina > Grand', distance: 5.07, map_link: '' },
 ];
 
 export const RunProvider = ({ children }) => {
@@ -49,25 +49,28 @@ export const RunProvider = ({ children }) => {
 
     const fetchRuns = async () => {
         try {
+            // Health Check for Runs (proactive)
+            const { error: healthError } = await supabase
+                .from('runs')
+                .select('effort, total_seconds')
+                .limit(1);
+
+            if (healthError && healthError.message.includes('column')) {
+                const missing = [];
+                if (healthError.message.includes('effort')) missing.push('effort (runs table)');
+                if (healthError.message.includes('total_seconds')) missing.push('total_seconds (runs table)');
+                if (missing.length > 0) {
+                    setDbHealth(prev => ({ ok: false, missingColumns: [...new Set([...prev.missingColumns, ...missing])] }));
+                }
+            }
+
             const { data, error } = await supabase
                 .from('runs')
                 .select('*')
                 .order('date', { ascending: false });
 
             if (error) throw error;
-            if (data) {
-                setRuns(data);
-
-                // Health Check for Runs
-                if (data.length > 0) {
-                    const sample = data[0];
-                    const needed = ['effort', 'total_seconds'];
-                    const missing = needed.filter(col => !(col in sample));
-                    if (missing.length > 0) {
-                        setDbHealth(prev => ({ ok: false, missingColumns: [...new Set([...prev.missingColumns, ...missing.map(m => `${m} (runs table)`)])] }));
-                    }
-                }
-            }
+            if (data) setRuns(data);
         } catch (error) {
             console.error('Error fetching runs:', error.message);
         }
@@ -75,23 +78,25 @@ export const RunProvider = ({ children }) => {
 
     const fetchRoutes = async () => {
         try {
-            const { data, error } = await supabase
+            // Health Check for Routes (proactive)
+            const { error: healthError } = await supabase
                 .from('routes')
-                .select('*')
+                .select('coordinates, location')
                 .limit(1);
 
-            if (error) throw error;
-
-            // Health Check for Routes
-            if (data && data.length > 0) {
-                const sample = data[0];
-                if (!('coordinates' in sample)) {
-                    setDbHealth(prev => ({ ok: false, missingColumns: [...new Set([...prev.missingColumns, 'coordinates (routes table)'])] }));
+            if (healthError && healthError.message.includes('column')) {
+                const missing = [];
+                if (healthError.message.includes('coordinates')) missing.push('coordinates (routes table)');
+                if (healthError.message.includes('location')) missing.push('location (routes table)');
+                if (missing.length > 0) {
+                    setDbHealth(prev => ({ ok: false, missingColumns: [...new Set([...prev.missingColumns, ...missing])] }));
                 }
             }
 
             // Real fetch (all)
-            const { data: allData } = await supabase.from('routes').select('*');
+            const { data: allData, error } = await supabase.from('routes').select('*');
+            if (error) throw error;
+
             if (allData && allData.length > 0) {
                 setRoutes(allData);
             } else {
