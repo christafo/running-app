@@ -79,8 +79,8 @@ const LogRun = () => {
             duration: duration,
             pace: paceFormatted,
             totalSeconds,
-            notes: formData.notes
-            // effort: formData.effort -- can add to model if needed
+            notes: formData.notes,
+            effort: parseInt(formData.effort)
         });
 
         navigate('/history');

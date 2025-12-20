@@ -126,7 +126,8 @@ export const RunProvider = ({ children }) => {
                 duration: runData.duration,
                 pace: runData.pace,
                 total_seconds: runData.totalSeconds,
-                notes: runData.notes
+                notes: runData.notes,
+                effort: runData.effort
             };
 
             const { data, error } = await supabase

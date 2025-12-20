@@ -41,6 +41,7 @@ const RunHistory = () => {
                             <th style={{ textAlign: 'right', padding: '1rem', fontWeight: '600', color: 'var(--secondary-color)' }}>Distance (km)</th>
                             <th style={{ textAlign: 'right', padding: '1rem', fontWeight: '600', color: 'var(--secondary-color)' }}>Time</th>
                             <th style={{ textAlign: 'right', padding: '1rem', fontWeight: '600', color: 'var(--secondary-color)' }}>Pace (min/km)</th>
+                            <th style={{ textAlign: 'center', padding: '1rem', fontWeight: '600', color: 'var(--secondary-color)' }}>Effort</th>
                             <th style={{ padding: '1rem' }}></th>
                         </tr>
                     </thead>
@@ -55,11 +56,14 @@ const RunHistory = () => {
                             runs.map(run => (
                                 <tr key={run.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                     <td style={{ padding: '1rem' }}>{getWeekNumber(run.date)}</td>
-                                    <td style={{ padding: '1rem' }}>{new Date(run.date + 'T00:00:00').toLocaleDateString()}</td>
-                                    <td style={{ padding: '1rem' }}>{getRouteName(run.routeId)}</td>
+                                    <td style={{ padding: '1rem' }}>{new Date(run.date.includes('T') ? run.date : run.date + 'T00:00:00').toLocaleDateString()}</td>
+                                    <td style={{ padding: '1rem' }}>{getRouteName(run.route_id)}</td>
                                     <td style={{ padding: '1rem', textAlign: 'right' }}>{Number(run.distance).toFixed(2)}</td>
                                     <td style={{ padding: '1rem', textAlign: 'right' }}>{run.duration}</td>
                                     <td style={{ padding: '1rem', textAlign: 'right' }}>{run.pace}</td>
+                                    <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                        {run.effort ? ['😌', '🙂', '😐', '😓', '🥵'][run.effort - 1] : '-'}
+                                    </td>
                                     <td style={{ padding: '1rem', textAlign: 'center' }}>
                                         <button
                                             onClick={() => deleteRun(run.id)}

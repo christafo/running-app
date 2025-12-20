@@ -18,6 +18,7 @@ const ImportRuns = () => {
         date: '',
         distance: '',
         duration: '',
+        effort: '',
     });
     const [dateFormat, setDateFormat] = useState('MM/dd/yyyy'); // Default US
 
@@ -49,6 +50,7 @@ const ImportRuns = () => {
                         if (lower.includes('dist') || lower.includes('km') || lower.includes('mi')) newMapping.distance = key;
                         if (lower.includes('dur') || lower.includes('time') && !newMapping.duration) newMapping.duration = key;
                         if (lower.includes('note') || lower.includes('desc')) newMapping.notes = key;
+                        if (lower.includes('effort') || lower.includes('intensity')) newMapping.effort = key;
                     });
                     setColumnMapping(newMapping);
                 }
@@ -92,7 +94,7 @@ const ImportRuns = () => {
                 status = 'error';
                 errors.push('Invalid Date');
             } else {
-                formattedDate = parsedDate.toISOString();
+                formattedDate = parsedDate.toISOString().split('T')[0];
             }
 
             // Validate Distance

@@ -8,6 +8,7 @@ create table runs (
   duration text not null, -- Storing as string "HH:MM:SS" for simplicity, or numeric seconds
   pace text,
   total_seconds numeric,
+  effort integer,
   notes text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
