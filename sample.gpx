@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="RunningApp">
+  <trk>
+    <name>Test Run</name>
+    <trkseg>
+      <trkpt lat="25.7617" lon="-80.1918"></trkpt>
+      <trkpt lat="25.7620" lon="-80.1920"></trkpt>
+      <trkpt lat="25.7625" lon="-80.1925"></trkpt>
+      <trkpt lat="25.7630" lon="-80.1930"></trkpt>
+    </trkseg>
+  </trk>
+</gpx>
