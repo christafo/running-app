@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { RunProvider, useRuns } from './context/RunContext';
 import Layout from './components/Layout';
 import LogRun from './pages/LogRun';
