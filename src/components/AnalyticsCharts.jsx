@@ -10,6 +10,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { calculatePace } from '../utils/calculations';
+import { getWeekIdentifier } from '../utils/dateUtils';
 import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 
 ChartJS.register(
@@ -27,22 +28,16 @@ const AnalyticsCharts = ({ runs }) => {
     const sortedRuns = [...runs].sort((a, b) => new Date(a.date) - new Date(b.date));
 
     // --- Weekly Analysis Logic ---
-    // Group runs by Week Number (ISO)
+    // Group runs by Week Identifier (ISO)
     const getWeekKey = (d) => {
-        const date = new Date(d);
-        date.setHours(0, 0, 0, 0);
-        // Thursday in current week decides the year.
-        date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
-        const week1 = new Date(date.getFullYear(), 0, 4);
-        // Adjust to Thursday in week 1 and count number of weeks from date to week1.
-        return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+        return getWeekIdentifier(d);
     };
 
     // Simple helper: Get stats for a set of runs
     const getStats = (runSet) => {
-        if (!runSet || runSet.length === 0) return { dist: 0, seconds: 0, pace: 0 };
+        if (!runSet || runSet.length === 0) return { dist: 0, seconds: 0, paceSeconds: 0 };
         const totalDist = runSet.reduce((acc, r) => acc + parseFloat(r.distance), 0);
-        const totalSecs = runSet.reduce((acc, r) => acc + r.totalSeconds, 0);
+        const totalSecs = runSet.reduce((acc, r) => acc + (r.total_seconds || 0), 0);
         return {
             dist: totalDist,
             seconds: totalSecs,
@@ -74,18 +69,22 @@ const AnalyticsCharts = ({ runs }) => {
         const prevStats = getStats(prevWeekRuns);
 
         const distDiff = curStats.dist - prevStats.dist;
-        const paceDiff = curStats.paceSeconds - prevStats.paceSeconds; // Negative is faster (good)
+        const paceDiff = (curStats.paceSeconds > 0 && prevStats.paceSeconds > 0)
+            ? curStats.paceSeconds - prevStats.paceSeconds
+            : 0; // Negative is faster (good)
 
         trends = {
             dist: {
                 current: curStats.dist.toFixed(1),
                 diff: distDiff,
-                positive: distDiff >= 0 // More distance is usually good
+                positive: distDiff >= 0,
+                hasPrev: prevStats.dist > 0
             },
             pace: {
                 current: calculatePace(1, curStats.paceSeconds), // Normalized pace
                 diff: paceDiff,
-                positive: paceDiff <= 0 // Lower pace is good
+                positive: paceDiff <= 0, // Lower pace is good
+                hasPrev: prevStats.paceSeconds > 0
             }
         };
     }
@@ -113,6 +112,7 @@ const AnalyticsCharts = ({ runs }) => {
                 label: 'Pace (min/km)',
                 // Convert pace string MM:SS to decimal minutes for charting
                 data: sortedRuns.map(r => {
+                    if (!r.pace || !r.pace.includes(':')) return 0;
                     const [m, s] = r.pace.split(':').map(Number);
                     return m + s / 60;
                 }),
@@ -172,15 +172,19 @@ const AnalyticsCharts = ({ runs }) => {
                         <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>This Week Distance</div>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
                             <span style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{trends.dist.current} km</span>
-                            <span style={{
-                                fontSize: '0.875rem',
-                                fontWeight: '600',
-                                color: trends.dist.positive ? '#16a34a' : '#ef4444',
-                                display: 'flex', alignItems: 'center'
-                            }}>
-                                {trends.dist.diff > 0 ? '+' : ''}{trends.dist.diff.toFixed(1)} km
-                                {trends.dist.positive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                            </span>
+                            {trends.dist.hasPrev ? (
+                                <span style={{
+                                    fontSize: '0.875rem',
+                                    fontWeight: '600',
+                                    color: trends.dist.positive ? '#16a34a' : '#ef4444',
+                                    display: 'flex', alignItems: 'center'
+                                }}>
+                                    {trends.dist.diff > 0 ? '+' : ''}{trends.dist.diff.toFixed(1)} km
+                                    {trends.dist.positive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                                </span>
+                            ) : (
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>First week</span>
+                            )}
                         </div>
                     </div>
 
@@ -189,16 +193,19 @@ const AnalyticsCharts = ({ runs }) => {
                         <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Avg Pace (Week)</div>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
                             <span style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{trends.pace.current}</span>
-                            <span style={{
-                                fontSize: '0.875rem',
-                                fontWeight: '600',
-                                color: trends.pace.positive ? '#16a34a' : '#ef4444',
-                                display: 'flex', alignItems: 'center'
-                            }}>
-                                {trends.pace.diff <= 0 ? '' : '+'}{Math.round(trends.pace.diff)}s/km
-                                {/* Logic: Negative diff means we got faster (Green), so ArrowUp? Or ArrowDown? usually "Down" on pace is good physically but "Up" visually means improvement? Let's stick to color: Green = Good. */}
-                                {trends.pace.positive ? <ArrowDownRight size={14} /> : <ArrowUpRight size={14} />}
-                            </span>
+                            {trends.pace.hasPrev ? (
+                                <span style={{
+                                    fontSize: '0.875rem',
+                                    fontWeight: '600',
+                                    color: trends.pace.positive ? '#16a34a' : '#ef4444',
+                                    display: 'flex', alignItems: 'center'
+                                }}>
+                                    {trends.pace.diff <= 0 ? '' : '+'}{Math.round(Math.abs(trends.pace.diff))}s/km
+                                    {trends.pace.positive ? <ArrowDownRight size={14} /> : <ArrowUpRight size={14} />}
+                                </span>
+                            ) : (
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>First week</span>
+                            )}
                         </div>
                     </div>
                 </div>

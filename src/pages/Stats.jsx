@@ -1,4 +1,5 @@
 import { useRuns } from '../context/RunContext';
+import { getWeekIdentifier } from '../utils/dateUtils';
 import {
     Activity,
     Map,
@@ -73,29 +74,15 @@ const Stats = () => {
         : null;
 
     // Avg Runs Per Week
-    // Calculate weeks between first and last run
-    const sortedDates = runs.map(r => new Date(r.date)).sort((a, b) => a - b);
-    const firstRunDate = sortedDates[0];
-    const lastRunDate = sortedDates[sortedDates.length - 1];
-    const diffTime = Math.abs(lastRunDate - firstRunDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // inclusive
-    const totalWeeks = Math.max(1, diffDays / 7);
-    const avgRunsPerWeek = totalRuns / totalWeeks;
-
-    // Max runs in a single calendar week
     const weeksMap = {};
     runs.forEach(r => {
-        const d = new Date(r.date);
-        // ISO Week logic roughly
-        const tempDate = new Date(d.getTime());
-        tempDate.setHours(0, 0, 0, 0);
-        tempDate.setDate(tempDate.getDate() + 3 - (tempDate.getDay() + 6) % 7);
-        const week1 = new Date(tempDate.getFullYear(), 0, 4);
-        const weekNo = 1 + Math.round(((tempDate.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
-        const key = `${tempDate.getFullYear()}-W${weekNo}`;
+        const key = getWeekIdentifier(r.date);
         weeksMap[key] = (weeksMap[key] || 0) + 1;
     });
-    const maxRunsPerWeek = Math.max(...Object.values(weeksMap));
+
+    const activeWeeks = Object.keys(weeksMap).length;
+    const avgRunsPerWeek = activeWeeks > 0 ? totalRuns / activeWeeks : 0;
+    const maxRunsPerWeek = activeWeeks > 0 ? Math.max(...Object.values(weeksMap)) : 0;
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
