@@ -127,12 +127,8 @@ export const RunProvider = ({ children }) => {
                 pace: runData.pace,
                 total_seconds: runData.totalSeconds,
                 notes: runData.notes || null,
+                effort: runData.effort ? parseInt(runData.effort) : null
             };
-
-            // Only add effort if it's a valid number to avoid schema errors if column is missing
-            if (runData.effort !== undefined && runData.effort !== null && !isNaN(runData.effort)) {
-                payload.effort = parseInt(runData.effort);
-            }
 
             const { data, error } = await supabase
                 .from('runs')
