@@ -91,6 +91,18 @@ const ImportRuns = () => {
                 }
             }
 
+            // Automated parsing attempt for common formats if still invalid
+            if (!parsedDate || !isValid(parsedDate)) {
+                const commonFormats = ['dd/MM/yyyy', 'dd/MM/yy', 'MM/dd/yyyy', 'MM/dd/yy', 'yyyy-MM-dd', 'dd-MM-yyyy', 'dd-MM-yy'];
+                for (const fmt of commonFormats) {
+                    const d = parse(dateStr, fmt, new Date());
+                    if (isValid(d)) {
+                        parsedDate = d;
+                        break;
+                    }
+                }
+            }
+
             if (!parsedDate || isNaN(parsedDate.getTime())) {
                 status = 'error';
                 errors.push('Invalid Date');
@@ -136,12 +148,26 @@ const ImportRuns = () => {
                     // Try to re-validate on edit
                     const rigorousDate = parse(value, dateFormat, new Date());
                     if (!isValid(rigorousDate)) {
-                        // Fallback check
-                        const d = new Date(value);
-                        if (isNaN(d.getTime())) newErrors.push('Invalid Date');
+                        // Try common formats as fallback
+                        const commonFormats = ['dd/MM/yyyy', 'dd/MM/yy', 'MM/dd/yyyy', 'MM/dd/yy', 'yyyy-MM-dd', 'dd-MM-yyyy', 'dd-MM-yy'];
+                        let found = false;
+                        for (const fmt of commonFormats) {
+                            const d = parse(value, fmt, new Date());
+                            if (isValid(d)) {
+                                updated.dateISO = d.toISOString().split('T')[0];
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            // Last ditch fallback check
+                            const d = new Date(value);
+                            if (isNaN(d.getTime())) newErrors.push('Invalid Date');
+                            else updated.dateISO = d.toISOString().split('T')[0];
+                        }
                     } else {
                         // Update ISO if valid
-                        updated.dateISO = rigorousDate.toISOString();
+                        updated.dateISO = rigorousDate.toISOString().split('T')[0];
                     }
                 }
                 if (field === 'distance') {

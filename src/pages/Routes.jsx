@@ -322,156 +322,173 @@ const RoutesPage = () => {
                 </div>
             )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 600px), 1fr))', gap: '2rem' }}>
                 {routes.map(route => (
-                    <div key={route.id} className="card" style={{ padding: '1.25rem', border: '1px solid var(--border-color)', borderRadius: '1rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                            {editingRouteId === route.id ? (
-                                <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
-                                    <input
-                                        type="text"
-                                        value={editName}
-                                        onChange={(e) => setEditName(e.target.value)}
-                                        style={{ flex: 1, padding: '0.25rem 0.5rem', borderRadius: '0.25rem', border: '1px solid var(--primary-color)' }}
-                                        autoFocus
-                                    />
-                                    <button onClick={() => handleSaveEdit(route.id)} style={{ background: 'none', border: 'none', color: '#16a34a', cursor: 'pointer' }}><Check size={18} /></button>
-                                    <button onClick={() => setEditingRouteId(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={18} /></button>
+                    <div key={route.id} className="card" style={{ padding: '0', overflow: 'hidden', border: '1px solid var(--border-color)', borderRadius: '1rem', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', flex: 1 }}>
+                            {/* Route Info */}
+                            <div style={{ padding: '1.5rem', flex: '1 1 300px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                                    {editingRouteId === route.id ? (
+                                        <div style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
+                                            <input
+                                                type="text"
+                                                value={editName}
+                                                onChange={(e) => setEditName(e.target.value)}
+                                                style={{ flex: 1, padding: '0.25rem 0.5rem', borderRadius: '0.25rem', border: '1px solid var(--primary-color)' }}
+                                                autoFocus
+                                            />
+                                            <button onClick={() => handleSaveEdit(route.id)} style={{ background: 'none', border: 'none', color: '#16a34a', cursor: 'pointer' }}><Check size={18} /></button>
+                                            <button onClick={() => setEditingRouteId(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={18} /></button>
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
+                                            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0, color: 'var(--primary-color)' }}>{route.name}</h3>
+                                            <button
+                                                onClick={() => startEditing(route)}
+                                                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.25rem', opacity: 0.6 }}
+                                                className="edit-btn"
+                                            >
+                                                <Edit2 size={14} />
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                            ) : (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
-                                    <h3 style={{ fontSize: '1.125rem', fontWeight: '600', margin: 0, color: 'var(--primary-color)' }}>{route.name}</h3>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                        <div style={{ width: '2rem', height: '2rem', borderRadius: '50%', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary-color)' }}>
+                                            <Map size={16} />
+                                        </div>
+                                        <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{route.distance.toFixed(2)} km</span>
+                                    </div>
+                                    {route.location && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                                            <div style={{ width: '2rem', height: '2rem', borderRadius: '50%', backgroundColor: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f97316' }}>
+                                                <MapPin size={16} />
+                                            </div>
+                                            <span>{route.location}</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.5rem' }}>
                                     <button
-                                        onClick={() => startEditing(route)}
-                                        style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.25rem', opacity: 0.6 }}
-                                        className="edit-btn"
+                                        onClick={() => handleLogRun(route.id)}
+                                        className="btn btn-primary"
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '0.5rem',
+                                            backgroundColor: 'var(--primary-color)',
+                                            fontSize: '0.875rem'
+                                        }}
                                     >
-                                        <Edit2 size={14} />
+                                        Log Run
                                     </button>
+                                    {route.mapLink && (
+                                        <a
+                                            href={route.mapLink}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="btn"
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '0.5rem',
+                                                backgroundColor: 'white',
+                                                border: '1px solid var(--border-color)',
+                                                color: 'var(--text-primary)',
+                                                textDecoration: 'none',
+                                                fontSize: '0.875rem'
+                                            }}
+                                        >
+                                            <ExternalLink size={14} /> Map
+                                        </a>
+                                    )}
                                 </div>
-                            )}
-                        </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginBottom: '1.25rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                                <Map size={14} />
-                                <span>{route.distance.toFixed(2)} km</span>
-                            </div>
-                            {route.location && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                                    <MapPin size={14} />
-                                    <span>{route.location}</span>
-                                </div>
-                            )}
-                        </div>
+                                {/* Route Stats Section */}
+                                {(() => {
+                                    const stats = getRouteStats(route.id);
+                                    if (stats) {
+                                        return (
+                                            <div style={{ padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '0.75rem', border: '1px solid var(--border-color)' }}>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.85rem' }}>
+                                                    <div>
+                                                        <div style={{ color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Best Time</div>
+                                                        <div style={{ fontWeight: '700', color: '#10b981' }}>{stats.bestTime}</div>
+                                                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{stats.bestPace}/km</div>
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Total Runs</div>
+                                                        <div style={{ fontWeight: '700' }}>{stats.totalRuns}</div>
+                                                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Since {stats.lastRunDate}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    return (
+                                        <div style={{ padding: '1rem', textAlign: 'center', border: '1px dashed var(--border-color)', borderRadius: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                                            No runs recorded for this route yet.
+                                        </div>
+                                    );
+                                })()}
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                            {route.mapLink ? (
-                                <a
-                                    href={route.mapLink}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="btn"
+                                <button
+                                    onClick={() => handleDelete(route.id, route.name)}
                                     style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '0.5rem',
-                                        backgroundColor: 'white',
-                                        border: '1px solid var(--border-color)',
-                                        color: 'var(--text-primary)',
-                                        textDecoration: 'none'
+                                        marginTop: '1.5rem',
+                                        background: 'none',
+                                        border: 'none',
+                                        color: '#ef4444',
+                                        fontSize: '0.75rem',
+                                        cursor: 'pointer',
+                                        opacity: 0.6,
+                                        width: '100%',
+                                        textAlign: 'left'
                                     }}
                                 >
-                                    <ExternalLink size={16} /> Map
-                                </a>
-                            ) : (
-                                <button disabled className="btn" style={{ backgroundColor: '#f1f5f9', color: '#94a3b8', cursor: 'not-allowed', border: 'none' }}>No Map Link</button>
-                            )}
+                                    Delete Route
+                                </button>
+                            </div>
 
-                            <button
-                                onClick={() => handleLogRun(route.id)}
-                                className="btn btn-primary"
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '0.5rem',
-                                    backgroundColor: '#0f172a'
-                                }}
-                            >
-                                Log Run
-                            </button>
-                        </div>
-
-                        {/* Route Stats Section */}
-                        {(() => {
-                            const stats = getRouteStats(route.id);
-                            if (stats) {
-                                return (
-                                    <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}>
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', fontSize: '0.875rem' }}>
-                                            <div>
-                                                <div style={{ color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Best Time</div>
-                                                <div style={{ fontWeight: '600', color: '#16a34a' }}>{stats.bestTime} <span style={{ fontSize: '0.75em', color: '#64748b' }}>({stats.bestPace}/km)</span></div>
-                                            </div>
-                                            <div>
-                                                <div style={{ color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Last Ran</div>
-                                                <div style={{ fontWeight: '600' }}>{stats.lastRunDate}</div>
-                                            </div>
-                                            <div>
-                                                <div style={{ color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Total Runs</div>
-                                                <div style={{ fontWeight: '600' }}>{stats.totalRuns}</div>
-                                            </div>
-                                        </div>
+                            {/* Map Segment */}
+                            <div style={{ flex: '1 1 300px', height: 'auto', minHeight: '250px', position: 'relative', borderLeft: '1px solid var(--border-color)' }}>
+                                {route.coordinates && route.coordinates.length > 0 ? (
+                                    <div style={{ height: '100%', width: '100%' }}>
+                                        <MapContainer
+                                            center={route.coordinates[0]}
+                                            zoom={13}
+                                            scrollWheelZoom={false}
+                                            style={{ height: '100%', width: '100%' }}
+                                            dragging={true}
+                                            zoomControl={true}
+                                        >
+                                            <TileLayer
+                                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                            />
+                                            <Polyline
+                                                positions={route.coordinates}
+                                                color="#ef4444"
+                                                weight={5}
+                                                opacity={0.8}
+                                            />
+                                            <MapBounds coordinates={route.coordinates} />
+                                        </MapContainer>
                                     </div>
-                                );
-                            }
-                            return null;
-                        })()}
-
-                        <button
-                            onClick={() => handleDelete(route.id, route.name)}
-                            style={{
-                                marginTop: '1rem',
-                                background: 'none',
-                                border: 'none',
-                                color: '#ef4444',
-                                fontSize: '0.75rem',
-                                cursor: 'pointer',
-                                textDecoration: 'underline',
-                                width: '100%',
-                                textAlign: 'center'
-                            }}
-                        >
-                            Delete Route
-                        </button>
-
-                        {
-                            route.coordinates && (
-                                <div style={{ height: '200px', width: '100%', marginTop: '1rem', borderRadius: '0.5rem', overflow: 'hidden', zIndex: 0 }}>
-                                    <MapContainer
-                                        center={route.coordinates[0]}
-                                        zoom={13}
-                                        scrollWheelZoom={false}
-                                        style={{ height: '100%', width: '100%' }}
-                                        dragging={false} // Static map feel
-                                        zoomControl={false}
-                                    >
-                                        <TileLayer
-                                            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-                                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                                        />
-                                        <Polyline
-                                            positions={route.coordinates}
-                                            color="#3b82f6"
-                                            weight={4}
-                                        />
-                                        <MapBounds coordinates={route.coordinates} />
-                                    </MapContainer>
-                                </div>
-                            )
-                        }
+                                ) : (
+                                    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', backgroundColor: '#f1f5f9' }}>
+                                        <Map size={32} style={{ marginBottom: '1rem', opacity: 0.3 }} />
+                                        <span style={{ fontSize: '0.875rem' }}>No GPS data available</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 ))}
             </div>
