@@ -77,6 +77,7 @@ const ImportRuns = () => {
             // Validate Date with Format
             let parsedDate;
             let formattedDate = dateStr;
+            let datePretty = 'Invalid';
 
             // 1. Try specific format chosen by user (Deteriminstic)
             if (dateFormat) {
@@ -116,6 +117,7 @@ const ImportRuns = () => {
                 errors.push('Invalid Date');
             } else {
                 formattedDate = parsedDate.toISOString().split('T')[0];
+                datePretty = format(parsedDate, 'MMM d, yyyy');
             }
 
             // Validate Distance
@@ -130,6 +132,7 @@ const ImportRuns = () => {
                 original: row,
                 dateDisplay: dateStr, // What user sees/edits
                 dateISO: formattedDate, // What we save
+                datePretty: datePretty, // Pretty formatted date for display
                 distance: distStr,
                 duration: durStr,
                 notes: notes,
@@ -154,9 +157,12 @@ const ImportRuns = () => {
 
                 if (field === 'dateDisplay') {
                     // Try to re-validate on edit
+                    let reParsedDate;
                     const rigorousDate = parse(value, dateFormat, new Date());
                     if (isValid(rigorousDate)) {
+                        reParsedDate = rigorousDate;
                         updated.dateISO = rigorousDate.toISOString().split('T')[0];
+                        updated.datePretty = format(rigorousDate, 'MMM d, yyyy');
                     } else {
                         // Try fallback logic same as initial process
                         const isUS = dateFormat.startsWith('MM');
@@ -168,16 +174,28 @@ const ImportRuns = () => {
                         for (const fmt of variations) {
                             const d = parse(value, fmt, new Date());
                             if (isValid(d)) {
+                                reParsedDate = d;
                                 updated.dateISO = d.toISOString().split('T')[0];
+                                updated.datePretty = format(d, 'MMM d, yyyy');
                                 found = true;
                                 break;
                             }
                         }
                         if (!found) {
                             const d = new Date(value);
-                            if (isNaN(d.getTime())) newErrors.push('Invalid Date');
-                            else updated.dateISO = d.toISOString().split('T')[0];
+                            if (isNaN(d.getTime())) {
+                                newErrors.push('Invalid Date');
+                                updated.datePretty = 'Invalid';
+                            } else {
+                                reParsedDate = d;
+                                updated.dateISO = d.toISOString().split('T')[0];
+                                updated.datePretty = format(d, 'MMM d, yyyy');
+                            }
                         }
+                    }
+                    if (!reParsedDate || isNaN(reParsedDate.getTime())) {
+                        newErrors.push('Invalid Date');
+                        updated.datePretty = 'Invalid';
                     }
                 }
                 if (field === 'distance') {
@@ -323,6 +341,7 @@ const ImportRuns = () => {
                                     <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Status</th>
                                     <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Date</th>
                                     <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Week</th>
+                                    <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Parsed Date</th>
                                     <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Distance</th>
                                     <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Duration</th>
                                     <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Notes</th>

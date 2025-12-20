@@ -248,6 +248,30 @@ const RoutesPage = () => {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    {routes.length > 0 && routes.every(r => !r.coordinates) && (
+                        <button
+                            onClick={async () => {
+                                setIsProcessing(true);
+                                // Seed a real map
+                                await addRoute({
+                                    name: 'South Beach Marina Loop',
+                                    distance: 4.39,
+                                    coordinates: [
+                                        [25.7617, -80.1918], [25.7620, -80.1920], [25.7625, -80.1925], [25.7630, -80.1930],
+                                        [25.7635, -80.1935], [25.7640, -80.1940], [25.7645, -80.1945], [25.7650, -80.1950],
+                                        [25.7655, -80.1955], [25.7660, -80.1960], [25.7650, -80.1970], [25.7640, -80.1980],
+                                        [25.7630, -80.1990], [25.7620, -80.2000], [25.7610, -80.2010], [25.7600, -80.2020]
+                                    ],
+                                    location: 'South Beach, Miami'
+                                });
+                                setIsProcessing(false);
+                            }}
+                            className="btn"
+                            style={{ fontSize: '0.8rem', backgroundColor: '#ecfdf5', color: '#059669', border: '1px solid #6ee7b7' }}
+                        >
+                            Enable Sample Map
+                        </button>
+                    )}
                     {routes.length > 0 && (
                         <button
                             onClick={handleClearAll}
