@@ -87,34 +87,13 @@ const ImportRuns = () => {
                 }
             }
 
-            // 2. Try common formats as fallback (Safest list, but prioritize user's choice of separators)
-            if (!parsedDate || !isValid(parsedDate)) {
-                // Determine order based on user's primary choice
-                const isUS = dateFormat.startsWith('MM');
-                const variations = isUS
-                    ? ['MM/dd/yyyy', 'MM-dd-yyyy', 'MM/dd/yy', 'MM-dd-yy', 'yyyy-MM-dd', 'dd/MM/yyyy', 'dd-MM-yyyy']
-                    : ['dd/MM/yyyy', 'dd-MM-yyyy', 'dd/MM/yy', 'dd-MM-yy', 'yyyy-MM-dd', 'MM/dd/yyyy', 'MM-dd-yyyy'];
-
-                for (const fmt of variations) {
-                    const d = parse(dateStr, fmt, new Date());
-                    if (isValid(d)) {
-                        parsedDate = d;
-                        break;
-                    }
-                }
-            }
-
-            // 3. Last ditch fallback: Browser's native parsing
-            if (!parsedDate || !isValid(parsedDate)) {
-                const d = new Date(dateStr);
-                if (!isNaN(d.getTime())) {
-                    parsedDate = d;
-                }
-            }
+            // 2. STRICTURE: No fallbacks! 
+            // If the user picked a format, use ONLY that format. 
+            // Fallbacks cause month/day swaps in mixed files.
 
             if (!parsedDate || isNaN(parsedDate.getTime())) {
                 status = 'error';
-                errors.push('Invalid Date');
+                errors.push(`Invalid format (Expected ${dateFormat})`);
             } else {
                 formattedDate = parsedDate.toISOString().split('T')[0];
                 datePretty = format(parsedDate, 'MMM d, yyyy');
@@ -156,55 +135,23 @@ const ImportRuns = () => {
                 let newStatus = 'valid';
 
                 if (field === 'dateDisplay') {
-                    // Try to re-validate on edit
-                    let reParsedDate;
-                    const rigorousDate = parse(value, dateFormat, new Date());
-                    if (isValid(rigorousDate)) {
-                        reParsedDate = rigorousDate;
-                        updated.dateISO = rigorousDate.toISOString().split('T')[0];
-                        updated.datePretty = format(rigorousDate, 'MMM d, yyyy');
+                    // Try to re-validate on edit (STRICT)
+                    const reParsedDate = parse(value, dateFormat, new Date());
+                    if (isValid(reParsedDate)) {
+                        updated.dateISO = reParsedDate.toISOString().split('T')[0];
+                        updated.datePretty = format(reParsedDate, 'MMM d, yyyy');
                     } else {
-                        // Try fallback logic same as initial process
-                        const isUS = dateFormat.startsWith('MM');
-                        const variations = isUS
-                            ? ['MM/dd/yyyy', 'MM-dd-yyyy', 'MM/dd/yy', 'MM-dd-yy', 'yyyy-MM-dd', 'dd/MM/yyyy', 'dd-MM-yyyy']
-                            : ['dd/MM/yyyy', 'dd-MM-yyyy', 'dd/MM/yy', 'dd-MM-yy', 'yyyy-MM-dd', 'MM/dd/yyyy', 'MM-dd-yyyy'];
-
-                        let found = false;
-                        for (const fmt of variations) {
-                            const d = parse(value, fmt, new Date());
-                            if (isValid(d)) {
-                                reParsedDate = d;
-                                updated.dateISO = d.toISOString().split('T')[0];
-                                updated.datePretty = format(d, 'MMM d, yyyy');
-                                found = true;
-                                break;
-                            }
-                        }
-                        if (!found) {
-                            const d = new Date(value);
-                            if (isNaN(d.getTime())) {
-                                newErrors.push('Invalid Date');
-                                updated.datePretty = 'Invalid';
-                            } else {
-                                reParsedDate = d;
-                                updated.dateISO = d.toISOString().split('T')[0];
-                                updated.datePretty = format(d, 'MMM d, yyyy');
-                            }
-                        }
-                    }
-                    if (!reParsedDate || isNaN(reParsedDate.getTime())) {
-                        newErrors.push('Invalid Date');
+                        newErrors.push(`Invalid format (Expected ${dateFormat})`);
                         updated.datePretty = 'Invalid';
                     }
                 }
                 if (field === 'distance') {
-                    if (!value || isNaN(parseFloat(value))) newErrors.push('Invalid Distance');
+                    if (isNaN(parseFloat(value))) newErrors.push('Invalid Distance');
                 }
 
-                if (newErrors.length > 0) newStatus = 'error';
-
-                return { ...updated, status: newStatus, errors: newErrors };
+                updated.errors = newErrors;
+                updated.status = newErrors.length > 0 ? 'error' : 'valid';
+                return updated;
             }
             return row;
         }));
@@ -323,15 +270,43 @@ const ImportRuns = () => {
 
             {step === 'validate' && (
                 <div>
-                    <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold' }}>Review & Fix ({processedData.length})</h3>
-                        <button
-                            onClick={handleImport}
-                            className="btn btn-primary"
-                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                        >
-                            <Save size={16} /> Import Valid Rows
-                        </button>
+                    <div style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold' }}>Review & Fix ({processedData.length})</h3>
+                            <button
+                                onClick={handleImport}
+                                disabled={processedData.some(r => r.status === 'error')}
+                                className="btn btn-primary"
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: processedData.some(r => r.status === 'error') ? 0.5 : 1 }}
+                            >
+                                <Save size={16} /> Import Valid Rows
+                            </button>
+                        </div>
+
+                        {processedData.some(r => r.status === 'error') && (
+                            <div style={{ padding: '1rem', backgroundColor: '#fff7ed', border: '1px solid #ffedd5', borderRadius: '0.5rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                <AlertCircle size={20} color="#f97316" />
+                                <div style={{ fontSize: '0.875rem', color: '#9a3412' }}>
+                                    <b>Parsing Issues Detected!</b> Some dates don't match your selected format (<b>{dateFormat}</b>).
+                                    <button
+                                        onClick={() => {
+                                            setDateFormat(dateFormat === 'MM/dd/yyyy' ? 'dd/MM/yyyy' : 'MM/dd/yyyy');
+                                            // Re-process
+                                            setStep('upload');
+                                            setTimeout(() => processData(), 100);
+                                        }}
+                                        style={{ marginLeft: '1rem', backgroundColor: '#f97316', color: 'white', border: 'none', padding: '0.25rem 0.75rem', borderRadius: '0.25rem', cursor: 'pointer', fontWeight: 'bold' }}
+                                    >
+                                        Try {dateFormat === 'MM/dd/yyyy' ? 'DD/MM/YYYY (Intl)' : 'MM/DD/YYYY (US)'} Instead
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        <div style={{ backgroundColor: '#f0f9ff', padding: '0.75rem', borderRadius: '0.5rem', fontSize: '0.85rem', color: '#0369a1', border: '1px solid #bae6fd' }}>
+                            <Info size={14} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                            <b>Check the "Parsed Date" column below!</b> It must match your actual run date. If December 6 shows up as June 12, click the button above to flip the format.
+                        </div>
                     </div>
 
                     <div style={{ overflowX: 'auto', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
@@ -369,11 +344,20 @@ const ImportRuns = () => {
                                         <td style={{ padding: '0.75rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                                             {row.status === 'valid' ? getWeekIdentifier(row.dateISO) : '-'}
                                         </td>
-                                        <td style={{ padding: '0.75rem', fontSize: '0.875rem' }}>
-                                            <div style={{ fontWeight: 'bold', color: row.datePretty === 'Invalid' ? '#ef4444' : '#1e293b' }}>
-                                                {row.datePretty}
+                                        <td style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)' }}>
+                                            <div style={{
+                                                backgroundColor: row.datePretty === 'Invalid' ? '#fee2e2' : '#f0fdf4',
+                                                padding: '0.5rem',
+                                                borderRadius: '0.5rem',
+                                                border: `1px solid ${row.datePretty === 'Invalid' ? '#fecaca' : '#dcfce7'}`
+                                            }}>
+                                                <div style={{ fontWeight: '800', fontSize: '0.9rem', color: row.datePretty === 'Invalid' ? '#991b1b' : '#166534' }}>
+                                                    {row.datePretty}
+                                                </div>
+                                                <div style={{ fontSize: '0.7rem', color: row.datePretty === 'Invalid' ? '#b91c1c' : '#15803d' }}>
+                                                    Input: {row.dateDisplay}
+                                                </div>
                                             </div>
-                                            <div style={{ fontSize: '0.7rem', color: '#64748b' }}>({row.dateDisplay})</div>
                                         </td>
                                         <td style={{ padding: '0.75rem' }}>
                                             <input
