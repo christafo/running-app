@@ -458,35 +458,50 @@ const RoutesPage = () => {
 
                             {/* Map Segment */}
                             <div style={{ flex: '1 1 300px', height: 'auto', minHeight: '250px', position: 'relative', borderLeft: '1px solid var(--border-color)' }}>
-                                {route.coordinates && route.coordinates.length > 0 ? (
-                                    <div style={{ height: '100%', width: '100%' }}>
-                                        <MapContainer
-                                            center={route.coordinates[0]}
-                                            zoom={13}
-                                            scrollWheelZoom={false}
-                                            style={{ height: '100%', width: '100%' }}
-                                            dragging={true}
-                                            zoomControl={true}
-                                        >
-                                            <TileLayer
-                                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                                            />
-                                            <Polyline
-                                                positions={route.coordinates}
-                                                color="#ef4444"
-                                                weight={5}
-                                                opacity={0.8}
-                                            />
-                                            <MapBounds coordinates={route.coordinates} />
-                                        </MapContainer>
-                                    </div>
-                                ) : (
-                                    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', backgroundColor: '#f1f5f9' }}>
-                                        <Map size={32} style={{ marginBottom: '1rem', opacity: 0.3 }} />
-                                        <span style={{ fontSize: '0.875rem' }}>No GPS data available</span>
-                                    </div>
-                                )}
+                                {(() => {
+                                    let coords = route.coordinates;
+                                    // Defensive parsing if coordinates is a string
+                                    if (typeof coords === 'string') {
+                                        try {
+                                            coords = JSON.parse(coords);
+                                        } catch (e) {
+                                            coords = null;
+                                        }
+                                    }
+
+                                    if (coords && Array.isArray(coords) && coords.length > 0) {
+                                        return (
+                                            <div style={{ height: '100%', width: '100%' }}>
+                                                <MapContainer
+                                                    center={coords[0]}
+                                                    zoom={13}
+                                                    scrollWheelZoom={false}
+                                                    style={{ height: '100%', width: '100%' }}
+                                                    dragging={true}
+                                                    zoomControl={true}
+                                                >
+                                                    <TileLayer
+                                                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                                    />
+                                                    <Polyline
+                                                        positions={coords}
+                                                        color="#ef4444"
+                                                        weight={5}
+                                                        opacity={0.8}
+                                                    />
+                                                    <MapBounds coordinates={coords} />
+                                                </MapContainer>
+                                            </div>
+                                        );
+                                    }
+                                    return (
+                                        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', backgroundColor: '#f1f5f9' }}>
+                                            <Map size={32} style={{ marginBottom: '1rem', opacity: 0.3 }} />
+                                            <span style={{ fontSize: '0.875rem' }}>No GPS data available</span>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         </div>
                     </div>
