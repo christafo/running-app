@@ -173,6 +173,33 @@ export const RunProvider = ({ children }) => {
         }
     };
 
+    const updateRun = async (runId, updates) => {
+        if (!session) return;
+        try {
+            const payload = {
+                ...updates,
+                // Ensure number types for effort and total_seconds if they are passed
+                effort: updates.effort ? parseInt(updates.effort) : updates.effort,
+                total_seconds: updates.total_seconds ? parseInt(updates.total_seconds) : updates.total_seconds
+            };
+
+            const { data, error } = await supabase
+                .from('runs')
+                .update(payload)
+                .eq('id', runId)
+                .select()
+                .single();
+
+            if (error) throw error;
+            if (data) {
+                setRuns(prev => prev.map(run => run.id === runId ? data : run));
+            }
+        } catch (error) {
+            console.error('Error updating run:', error);
+            alert(`Failed to update run: ${error.message || 'Unknown error'}`);
+        }
+    };
+
     const deleteRun = async (id) => {
         if (!session) return;
         try {
@@ -300,6 +327,7 @@ export const RunProvider = ({ children }) => {
         routes,
         dbHealth,
         addRun,
+        updateRun,
         deleteRun,
         addRoute,
         deleteRoute,

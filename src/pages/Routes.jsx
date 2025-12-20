@@ -428,6 +428,22 @@ const RoutesPage = () => {
                                     >
                                         Log Run
                                     </button>
+                                    <button
+                                        onClick={() => navigate(`/routes/${route.id}`)}
+                                        className="btn"
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '0.5rem',
+                                            backgroundColor: 'white',
+                                            border: '1px solid var(--border-color)',
+                                            color: 'var(--primary-color)',
+                                            fontSize: '0.875rem'
+                                        }}
+                                    >
+                                        View Details
+                                    </button>
                                     {route.map_link && (
                                         <a
                                             href={route.map_link}

@@ -3,6 +3,7 @@ import { RunProvider, useRuns } from './context/RunContext';
 import Layout from './components/Layout';
 import LogRun from './pages/LogRun';
 import RoutesPage from './pages/Routes';
+import RouteDetail from './pages/RouteDetail';
 import Stats from './pages/Stats';
 import Trends from './pages/Trends';
 import RunHistory from './pages/RunHistory';
@@ -33,6 +34,7 @@ function App() {
 
           <Route path="/" element={<ProtectedRoute><LogRun /></ProtectedRoute>} />
           <Route path="/routes" element={<ProtectedRoute><RoutesPage /></ProtectedRoute>} />
+          <Route path="/routes/:id" element={<ProtectedRoute><RouteDetail /></ProtectedRoute>} />
           <Route path="/stats" element={<ProtectedRoute><Stats /></ProtectedRoute>} />
           <Route path="/trends" element={<ProtectedRoute><Trends /></ProtectedRoute>} />
           <Route path="/history" element={<ProtectedRoute><RunHistory /></ProtectedRoute>} />
