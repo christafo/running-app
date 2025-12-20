@@ -40,7 +40,7 @@ const RunHistory = () => {
                         <tr style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--background-color)' }}>
                             <th style={{ textAlign: 'left', padding: '1rem', fontWeight: '600', color: 'var(--secondary-color)' }}>Week</th>
                             <th style={{ textAlign: 'left', padding: '1rem', fontWeight: '600', color: 'var(--secondary-color)' }}>Date</th>
-                            <th style={{ textAlign: 'left', padding: '1rem', fontWeight: '600', color: 'var(--secondary-color)' }}>Route</th>
+                            <th style={{ textAlign: 'left', padding: '1rem', fontWeight: '600', color: 'var(--secondary-color)', minWidth: '200px' }}>Route</th>
                             <th style={{ textAlign: 'right', padding: '1rem', fontWeight: '600', color: 'var(--secondary-color)' }}>Distance (km)</th>
                             <th style={{ textAlign: 'right', padding: '1rem', fontWeight: '600', color: 'var(--secondary-color)' }}>Time</th>
                             <th style={{ textAlign: 'right', padding: '1rem', fontWeight: '600', color: 'var(--secondary-color)' }}>Pace (min/km)</th>
@@ -60,7 +60,7 @@ const RunHistory = () => {
                                 <tr key={run.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
                                     <td style={{ padding: '0.75rem' }}>{getWeekNumber(run.date)}</td>
                                     <td style={{ padding: '0.75rem' }}>{new Date(run.date.includes('T') ? run.date : run.date + 'T00:00:00').toLocaleDateString()}</td>
-                                    <td style={{ padding: '0.75rem' }}>
+                                    <td style={{ padding: '0.75rem', minWidth: '200px' }}>
                                         <select
                                             value={run.route_id || ''}
                                             onChange={(e) => handleRouteChange(run.id, e.target.value)}

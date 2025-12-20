@@ -191,9 +191,12 @@ export const RunProvider = ({ children }) => {
                 .maybeSingle();
 
             if (error) throw error;
-            if (data) {
-                setRuns(prev => prev.map(run => run.id === runId ? data : run));
-            }
+
+            // If data is null (maybeSingle() found nothing), fall back to updating local state manually
+            // This ensures the UI stays responsive even if Supabase doesn't return the object
+            setRuns(prev => prev.map(run =>
+                run.id === runId ? { ...run, ...payload } : run
+            ));
         } catch (error) {
             console.error('Error updating run:', error);
             alert(`Failed to update run: ${error.message || 'Unknown error'}`);
