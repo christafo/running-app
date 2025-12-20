@@ -1,27 +1,42 @@
+import { format, parseISO, getISOWeek, getISOWeekYear } from 'date-fns';
 
 /**
  * Returns an ISO-8601 week number for the given date.
  * Returns a string format "YYYY-Www"
  */
 export const getWeekIdentifier = (dateInput) => {
-    const date = new Date(dateInput);
+    if (!dateInput) return 'Invalid Date';
+
+    let date;
+    if (typeof dateInput === 'string') {
+        // If it's a simple YYYY-MM-DD, parse manually to avoid UTC shift
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+            const [y, m, d] = dateInput.split('-').map(Number);
+            date = new Date(y, m - 1, d);
+        } else {
+            date = parseISO(dateInput);
+        }
+    } else {
+        date = new Date(dateInput);
+    }
+
     if (isNaN(date.getTime())) return 'Invalid Date';
 
-    // ISO week date week number: http://en.wikipedia.org/wiki/ISO_week_date
-    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    const dayNum = d.getUTCDay() || 7;
-    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    const weekNo = getISOWeek(date);
+    const year = getISOWeekYear(date);
 
-    return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+    return `${year}-W${String(weekNo).padStart(2, '0')}`;
 };
 
 /**
  * Returns the start of the week (Monday) for a given date
  */
 export const getStartOfWeek = (dateInput) => {
-    const date = new Date(dateInput);
+    let date = new Date(dateInput);
+    if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+        const [y, m, d] = dateInput.split('-').map(Number);
+        date = new Date(y, m - 1, d);
+    }
     const day = date.getDay();
     const diff = date.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
     return new Date(date.setDate(diff));

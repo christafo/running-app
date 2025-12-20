@@ -471,12 +471,13 @@ const RoutesPage = () => {
 
                                     if (coords && Array.isArray(coords) && coords.length > 0) {
                                         return (
-                                            <div style={{ height: '100%', width: '100%' }}>
+                                            <div style={{ height: '300px', width: '100%', position: 'relative' }}>
                                                 <MapContainer
+                                                    key={route.id}
                                                     center={coords[0]}
                                                     zoom={13}
                                                     scrollWheelZoom={false}
-                                                    style={{ height: '100%', width: '100%' }}
+                                                    style={{ height: '300px', width: '100%' }}
                                                     dragging={true}
                                                     zoomControl={true}
                                                 >

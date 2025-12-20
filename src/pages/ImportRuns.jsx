@@ -4,6 +4,7 @@ import Papa from 'papaparse';
 import { parse, isValid } from 'date-fns';
 import { calculatePace, parseDurationToSeconds } from '../utils/calculations';
 import { useRuns } from '../context/RunContext';
+import { getWeekIdentifier } from '../utils/dateUtils';
 import { Upload, AlertCircle, Check, ArrowRight, Save, X, Info } from 'lucide-react';
 
 const ImportRuns = () => {
@@ -77,13 +78,7 @@ const ImportRuns = () => {
             let parsedDate;
             let formattedDate = dateStr;
 
-            // Try simplistic parse first
-            const d = new Date(dateStr);
-            if (!isNaN(d.getTime())) {
-                parsedDate = d;
-            }
-
-            // If specific format chosen, try rigorous parse
+            // 1. Try specific format chosen by user (Deteriminstic)
             if (dateFormat) {
                 const rigorousDate = parse(dateStr, dateFormat, new Date());
                 if (isValid(rigorousDate)) {
@@ -91,15 +86,24 @@ const ImportRuns = () => {
                 }
             }
 
-            // Automated parsing attempt for common formats if still invalid
+            // 2. Try common formats as fallback (Safest list)
             if (!parsedDate || !isValid(parsedDate)) {
-                const commonFormats = ['dd/MM/yyyy', 'dd/MM/yy', 'MM/dd/yyyy', 'MM/dd/yy', 'yyyy-MM-dd', 'dd-MM-yyyy', 'dd-MM-yy'];
+                // If the user's date has slashes or dashes, try common variations
+                const commonFormats = ['yyyy-MM-dd', 'dd/MM/yyyy', 'MM/dd/yyyy', 'dd/MM/yy', 'MM/dd/yy', 'dd-MM-yyyy', 'dd-MM-yy'];
                 for (const fmt of commonFormats) {
                     const d = parse(dateStr, fmt, new Date());
                     if (isValid(d)) {
                         parsedDate = d;
                         break;
                     }
+                }
+            }
+
+            // 3. Last ditch fallback: Browser's native parsing
+            if (!parsedDate || !isValid(parsedDate)) {
+                const d = new Date(dateStr);
+                if (!isNaN(d.getTime())) {
+                    parsedDate = d;
                 }
             }
 
@@ -147,9 +151,11 @@ const ImportRuns = () => {
                 if (field === 'dateDisplay') {
                     // Try to re-validate on edit
                     const rigorousDate = parse(value, dateFormat, new Date());
-                    if (!isValid(rigorousDate)) {
-                        // Try common formats as fallback
-                        const commonFormats = ['dd/MM/yyyy', 'dd/MM/yy', 'MM/dd/yyyy', 'MM/dd/yy', 'yyyy-MM-dd', 'dd-MM-yyyy', 'dd-MM-yy'];
+                    if (isValid(rigorousDate)) {
+                        updated.dateISO = rigorousDate.toISOString().split('T')[0];
+                    } else {
+                        // Try fallback logic same as initial process
+                        const commonFormats = ['yyyy-MM-dd', 'dd/MM/yyyy', 'MM/dd/yyyy', 'dd/MM/yy', 'MM/dd/yy', 'dd-MM-yyyy', 'dd-MM-yy'];
                         let found = false;
                         for (const fmt of commonFormats) {
                             const d = parse(value, fmt, new Date());
@@ -160,14 +166,10 @@ const ImportRuns = () => {
                             }
                         }
                         if (!found) {
-                            // Last ditch fallback check
                             const d = new Date(value);
                             if (isNaN(d.getTime())) newErrors.push('Invalid Date');
                             else updated.dateISO = d.toISOString().split('T')[0];
                         }
-                    } else {
-                        // Update ISO if valid
-                        updated.dateISO = rigorousDate.toISOString().split('T')[0];
                     }
                 }
                 if (field === 'distance') {
@@ -291,9 +293,10 @@ const ImportRuns = () => {
                                 <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid var(--border-color)' }}>
                                     <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Status</th>
                                     <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Date</th>
+                                    <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Week</th>
                                     <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Distance</th>
                                     <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Duration</th>
-                                    <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Route (Optional)</th>
+                                    <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Notes</th>
                                     <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Action</th>
                                 </tr>
                             </thead>
@@ -314,6 +317,9 @@ const ImportRuns = () => {
                                                 onChange={(e) => handleCellChange(row.id, 'dateDisplay', e.target.value)}
                                                 style={{ border: row.errors.includes('Invalid Date') ? '1px solid #ef4444' : '1px solid #e2e8f0', padding: '0.25rem', borderRadius: '0.25rem', width: '120px' }}
                                             />
+                                        </td>
+                                        <td style={{ padding: '0.75rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                            {row.status === 'valid' ? getWeekIdentifier(row.dateISO) : '-'}
                                         </td>
                                         <td style={{ padding: '0.75rem' }}>
                                             <input
