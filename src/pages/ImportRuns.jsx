@@ -68,6 +68,7 @@ const ImportRuns = () => {
             const distStr = row[columnMapping.distance];
             const durStr = row[columnMapping.duration];
             const notes = row[columnMapping.notes] || '';
+            const effortStr = row[columnMapping.effort] || '';
 
             let status = 'valid';
             let errors = [];
@@ -112,6 +113,7 @@ const ImportRuns = () => {
                 distance: distStr,
                 duration: durStr,
                 notes: notes,
+                effort: effortStr,
                 routeId: '', // Default to none
                 status,
                 errors
@@ -173,7 +175,8 @@ const ImportRuns = () => {
                         notes: row.notes,
                         routeId: row.routeId || null,
                         pace: pace,
-                        totalSeconds: totalSeconds
+                        totalSeconds: totalSeconds,
+                        effort: parseInt(row.effort) || null
                     });
                     successCount++;
                 } catch (e) {

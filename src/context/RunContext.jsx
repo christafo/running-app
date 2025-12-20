@@ -121,13 +121,13 @@ export const RunProvider = ({ children }) => {
             const payload = {
                 user_id: session.user.id,
                 date: runData.date,
-                route_id: runData.routeId,
+                route_id: runData.routeId || null,
                 distance: runData.distance,
                 duration: runData.duration,
                 pace: runData.pace,
                 total_seconds: runData.totalSeconds,
-                notes: runData.notes,
-                effort: runData.effort
+                notes: runData.notes || null,
+                effort: runData.effort || null
             };
 
             const { data, error } = await supabase
@@ -141,8 +141,8 @@ export const RunProvider = ({ children }) => {
                 setRuns(prev => [data, ...prev].sort((a, b) => new Date(b.date) - new Date(a.date)));
             }
         } catch (error) {
-            console.error('Error adding run:', error.message);
-            alert('Failed to save run');
+            console.error('Error adding run:', error);
+            alert(`Failed to save run: ${error.message || 'Unknown error'}`);
         }
     };
 
