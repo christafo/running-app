@@ -176,11 +176,19 @@ export const RunProvider = ({ children }) => {
     const updateRun = async (runId, updates) => {
         if (!session) return;
         try {
+            // Filter out undefined values to prevent state corruption
+            const cleanUpdates = Object.entries(updates).reduce((acc, [key, value]) => {
+                if (value !== undefined) {
+                    acc[key] = value;
+                }
+                return acc;
+            }, {});
+
             const payload = {
-                ...updates,
+                ...cleanUpdates,
                 // Ensure number types for effort and total_seconds if they are passed
-                effort: updates.effort ? parseInt(updates.effort) : updates.effort,
-                total_seconds: updates.total_seconds ? parseInt(updates.total_seconds) : updates.total_seconds
+                effort: cleanUpdates.effort ? parseInt(cleanUpdates.effort) : cleanUpdates.effort,
+                total_seconds: cleanUpdates.total_seconds ? parseInt(cleanUpdates.total_seconds) : cleanUpdates.total_seconds
             };
 
             const { data, error } = await supabase
@@ -192,10 +200,11 @@ export const RunProvider = ({ children }) => {
 
             if (error) throw error;
 
-            // If data is null (maybeSingle() found nothing), fall back to updating local state manually
-            // This ensures the UI stays responsive even if Supabase doesn't return the object
+            // Update local state with the returned data or the payload
+            // Use data if available (preferred), otherwise use payload
+            const updatedRun = data || payload;
             setRuns(prev => prev.map(run =>
-                run.id === runId ? { ...run, ...payload } : run
+                run.id === runId ? { ...run, ...updatedRun } : run
             ));
         } catch (error) {
             console.error('Error updating run:', error);

@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet';
 import { useState, useEffect } from 'react';
 import { Map, ExternalLink, Plus, Loader2, Edit2, Check, X, MapPin } from 'lucide-react';
 import L from 'leaflet';
+import { parseDurationToSeconds } from '../utils/calculations';
 
 // Fix for default Leaflet icon not showing
 delete L.Icon.Default.prototype._getIconUrl;
@@ -89,7 +90,6 @@ const RoutesPage = () => {
         // Ensure total_seconds is calculated for all runs if missing (fallback for legacy or manual data)
         const processedRuns = routeRuns.map(run => {
             if (!run.total_seconds || run.total_seconds <= 0) {
-                const { parseDurationToSeconds } = require('../utils/calculations');
                 return { ...run, total_seconds: parseDurationToSeconds(run.duration) };
             }
             return run;

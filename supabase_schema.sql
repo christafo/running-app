@@ -34,6 +34,9 @@ create policy "Users can view their own runs" on runs
 create policy "Users can insert their own runs" on runs
   for insert with check (auth.uid() = user_id);
 
+create policy "Users can update their own runs" on runs
+  for update using (auth.uid() = user_id);
+
 create policy "Users can delete their own runs" on runs
   for delete using (auth.uid() = user_id);
 
@@ -42,6 +45,9 @@ create policy "Users can view their own routes" on routes
 
 create policy "Users can insert their own routes" on routes
   for insert with check (auth.uid() = user_id);
+
+create policy "Users can update their own routes" on routes
+  for update using (auth.uid() = user_id);
 
 create policy "Users can delete their own routes" on routes
   for delete using (auth.uid() = user_id);
