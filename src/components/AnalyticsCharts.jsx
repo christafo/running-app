@@ -285,7 +285,7 @@ const AnalyticsCharts = ({ runs, routes }) => {
         }
     }
 
-    if (runs.length < 2) {
+    if (sortedRuns.length < 2) {
         return (
             <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem' }}>
                 Not enough data to show trends. Log more runs!
