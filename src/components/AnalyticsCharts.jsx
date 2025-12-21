@@ -4,28 +4,63 @@ import {
     LinearScale,
     PointElement,
     LineElement,
+    BarElement,
     Title,
     Tooltip,
     Legend,
 } from 'chart.js';
-import { Line } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import { calculatePace } from '../utils/calculations';
 import { getWeekIdentifier } from '../utils/dateUtils';
-import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Minus, Calendar } from 'lucide-react';
+import { useState } from 'react';
+import { subWeeks, subMonths, subYears, isAfter, parseISO } from 'date-fns';
 
 ChartJS.register(
     CategoryScale,
     LinearScale,
     PointElement,
     LineElement,
+    BarElement,
     Title,
     Tooltip,
     Legend
 );
 
-const AnalyticsCharts = ({ runs }) => {
-    // Sort chronological
-    const sortedRuns = [...runs].sort((a, b) => new Date(a.date) - new Date(b.date));
+const AnalyticsCharts = ({ runs, routes }) => {
+    // Date range state
+    const [dateRange, setDateRange] = useState('last4weeks');
+
+    // Filter runs by date range
+    const getFilteredRuns = () => {
+        const now = new Date();
+        let cutoffDate;
+
+        switch (dateRange) {
+            case 'last4weeks':
+                cutoffDate = subWeeks(now, 4);
+                break;
+            case 'monthly':
+                cutoffDate = subMonths(now, 1);
+                break;
+            case 'quarterly':
+                cutoffDate = subMonths(now, 3);
+                break;
+            case 'yearly':
+                cutoffDate = subYears(now, 1);
+                break;
+            default:
+                return runs;
+        }
+
+        return runs.filter(run => {
+            const runDate = typeof run.date === 'string' ? parseISO(run.date) : new Date(run.date);
+            return isAfter(runDate, cutoffDate);
+        });
+    };
+
+    const filteredRuns = getFilteredRuns();
+    const sortedRuns = [...filteredRuns].sort((a, b) => new Date(a.date) - new Date(b.date));
 
     // --- Weekly Analysis Logic ---
     // Group runs by Week Identifier (ISO)
@@ -49,21 +84,27 @@ const AnalyticsCharts = ({ runs }) => {
     let trends = null;
     if (sortedRuns.length > 0) {
         const lastRunDate = new Date(sortedRuns[sortedRuns.length - 1].date);
-        const currentWeekNum = getWeekKey(lastRunDate);
-        const currentYear = lastRunDate.getFullYear(); // Simplification
+        const currentWeekId = getWeekKey(lastRunDate);
 
-        const currentWeekRuns = sortedRuns.filter(r => {
-            const d = new Date(r.date);
-            return getWeekKey(d) === currentWeekNum && d.getFullYear() === currentYear;
-        });
+        // Filter runs for current week
+        const currentWeekRuns = sortedRuns.filter(r => getWeekKey(r.date) === currentWeekId);
 
-        // Find previous week runs (roughly)
-        // Note: strict calendrical previous week might be empty. 
-        // Let's just look for weekNum - 1
-        const prevWeekRuns = sortedRuns.filter(r => {
-            const d = new Date(r.date);
-            return getWeekKey(d) === (currentWeekNum - 1) && d.getFullYear() === currentYear;
-        });
+        // Calculate previous week identifier
+        // Parse "2025-W51" format to get year and week number
+        const [yearStr, weekStr] = currentWeekId.split('-W');
+        let prevYear = parseInt(yearStr);
+        let prevWeek = parseInt(weekStr) - 1;
+
+        // Handle year rollover (week 0 becomes week 52/53 of previous year)
+        if (prevWeek < 1) {
+            prevYear -= 1;
+            prevWeek = 52; // Most years have 52 weeks, some have 53
+        }
+
+        const prevWeekId = `${prevYear}-W${String(prevWeek).padStart(2, '0')}`;
+
+        // Filter runs for previous week
+        const prevWeekRuns = sortedRuns.filter(r => getWeekKey(r.date) === prevWeekId);
 
         const curStats = getStats(currentWeekRuns);
         const prevStats = getStats(prevWeekRuns);
@@ -92,35 +133,80 @@ const AnalyticsCharts = ({ runs }) => {
 
     const labels = sortedRuns.map(r => new Date(r.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
 
+    // Calculate average distance for trend line
+    const avgDistance = sortedRuns.length > 0
+        ? sortedRuns.reduce((acc, r) => acc + parseFloat(r.distance), 0) / sortedRuns.length
+        : 0;
+
     const distanceData = {
         labels,
         datasets: [
             {
-                label: 'Distance (km)',
+                type: 'bar',
+                label: 'Distance',
                 data: sortedRuns.map(r => r.distance),
+                backgroundColor: 'rgba(59, 130, 246, 0.7)',
                 borderColor: '#3b82f6',
-                backgroundColor: 'rgba(59, 130, 246, 0.5)',
-                tension: 0.3,
+                borderWidth: 1,
+                // Store full run data for tooltips
+                runData: sortedRuns,
+            },
+            {
+                type: 'line',
+                label: 'Average',
+                data: Array(sortedRuns.length).fill(avgDistance),
+                borderColor: '#10b981',
+                borderWidth: 2,
+                borderDash: [5, 5],
+                pointRadius: 0,
+                fill: false,
             },
         ],
     };
+
+    // Calculate average pace for trend line
+    const validPaceRuns = sortedRuns.filter(r => r.pace && r.pace.includes(':'));
+    const avgPaceDecimal = validPaceRuns.length > 0
+        ? validPaceRuns.reduce((acc, r) => {
+            const [m, s] = r.pace.split(':').map(Number);
+            return acc + (m + s / 60);
+        }, 0) / validPaceRuns.length
+        : 0;
 
     const paceData = {
         labels,
         datasets: [
             {
-                label: 'Pace (min/km)',
-                // Convert pace string MM:SS to decimal minutes for charting
+                type: 'bar',
+                label: 'Pace',
                 data: sortedRuns.map(r => {
                     if (!r.pace || !r.pace.includes(':')) return 0;
                     const [m, s] = r.pace.split(':').map(Number);
                     return m + s / 60;
                 }),
+                backgroundColor: 'rgba(236, 72, 153, 0.7)',
                 borderColor: '#ec4899',
-                backgroundColor: 'rgba(236, 72, 153, 0.5)',
-                tension: 0.3,
+                borderWidth: 1,
+                runData: sortedRuns,
+            },
+            {
+                type: 'line',
+                label: 'Average',
+                data: Array(sortedRuns.length).fill(avgPaceDecimal),
+                borderColor: '#10b981',
+                borderWidth: 2,
+                borderDash: [5, 5],
+                pointRadius: 0,
+                fill: false,
             },
         ],
+    };
+
+    // Get route name helper
+    const getRouteName = (routeId) => {
+        if (!routes) return 'Unknown';
+        const route = routes.find(r => r.id === routeId);
+        return route ? route.name : 'No route';
     };
 
     const options = {
@@ -128,6 +214,52 @@ const AnalyticsCharts = ({ runs }) => {
         plugins: {
             legend: { position: 'top' },
             title: { display: false },
+            tooltip: {
+                callbacks: {
+                    title: (context) => {
+                        const index = context[0].dataIndex;
+                        const run = sortedRuns[index];
+                        return new Date(run.date).toLocaleDateString(undefined, {
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric'
+                        });
+                    },
+                    afterTitle: (context) => {
+                        const index = context[0].dataIndex;
+                        const run = sortedRuns[index];
+                        return getRouteName(run.route_id);
+                    },
+                    label: (context) => {
+                        const index = context.dataIndex;
+                        const run = sortedRuns[index];
+
+                        if (context.dataset.label === 'Average') {
+                            return `Average: ${context.formattedValue}`;
+                        }
+
+                        if (context.dataset.label === 'Distance') {
+                            return [
+                                `Distance: ${parseFloat(run.distance).toFixed(2)} km`,
+                                `Time: ${run.duration}`,
+                                `Pace: ${run.pace}/km`
+                            ];
+                        }
+
+                        if (context.dataset.label === 'Pace') {
+                            const mins = Math.floor(context.parsed.y);
+                            const secs = Math.round((context.parsed.y - mins) * 60);
+                            return [
+                                `Pace: ${mins}:${secs.toString().padStart(2, '0')}/km`,
+                                `Distance: ${parseFloat(run.distance).toFixed(2)} km`,
+                                `Time: ${run.duration}`
+                            ];
+                        }
+
+                        return context.formattedValue;
+                    }
+                }
+            }
         },
         scales: {
             x: { grid: { display: false } },
@@ -163,6 +295,73 @@ const AnalyticsCharts = ({ runs }) => {
 
     return (
         <div>
+            {/* Date Range Filter */}
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <button
+                    onClick={() => setDateRange('last4weeks')}
+                    style={{
+                        padding: '0.5rem 1rem',
+                        borderRadius: '0.5rem',
+                        border: dateRange === 'last4weeks' ? '2px solid var(--primary-color)' : '1px solid var(--border-color)',
+                        backgroundColor: dateRange === 'last4weeks' ? '#eff6ff' : 'white',
+                        color: dateRange === 'last4weeks' ? 'var(--primary-color)' : 'var(--text-secondary)',
+                        fontWeight: dateRange === 'last4weeks' ? '600' : '400',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem'
+                    }}
+                >
+                    <Calendar size={14} /> Last 4 Weeks
+                </button>
+                <button
+                    onClick={() => setDateRange('monthly')}
+                    style={{
+                        padding: '0.5rem 1rem',
+                        borderRadius: '0.5rem',
+                        border: dateRange === 'monthly' ? '2px solid var(--primary-color)' : '1px solid var(--border-color)',
+                        backgroundColor: dateRange === 'monthly' ? '#eff6ff' : 'white',
+                        color: dateRange === 'monthly' ? 'var(--primary-color)' : 'var(--text-secondary)',
+                        fontWeight: dateRange === 'monthly' ? '600' : '400',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem'
+                    }}
+                >
+                    Monthly
+                </button>
+                <button
+                    onClick={() => setDateRange('quarterly')}
+                    style={{
+                        padding: '0.5rem 1rem',
+                        borderRadius: '0.5rem',
+                        border: dateRange === 'quarterly' ? '2px solid var(--primary-color)' : '1px solid var(--border-color)',
+                        backgroundColor: dateRange === 'quarterly' ? '#eff6ff' : 'white',
+                        color: dateRange === 'quarterly' ? 'var(--primary-color)' : 'var(--text-secondary)',
+                        fontWeight: dateRange === 'quarterly' ? '600' : '400',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem'
+                    }}
+                >
+                    Quarterly
+                </button>
+                <button
+                    onClick={() => setDateRange('yearly')}
+                    style={{
+                        padding: '0.5rem 1rem',
+                        borderRadius: '0.5rem',
+                        border: dateRange === 'yearly' ? '2px solid var(--primary-color)' : '1px solid var(--border-color)',
+                        backgroundColor: dateRange === 'yearly' ? '#eff6ff' : 'white',
+                        color: dateRange === 'yearly' ? 'var(--primary-color)' : 'var(--text-secondary)',
+                        fontWeight: dateRange === 'yearly' ? '600' : '400',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem'
+                    }}
+                >
+                    Yearly
+                </button>
+            </div>
+
             {/* Weekly Analysis Cards */}
             {trends && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
@@ -242,13 +441,13 @@ const AnalyticsCharts = ({ runs }) => {
                 <div style={{ minWidth: 0 }}>
                     <h3 style={{ fontSize: '1.125rem', marginBottom: '1rem', color: 'var(--secondary-color)', fontWeight: '600' }}>Distance Trend</h3>
                     <div style={{ height: '300px' }}>
-                        <Line data={distanceData} options={{ ...options, maintainAspectRatio: false }} />
+                        <Bar data={distanceData} options={{ ...options, maintainAspectRatio: false }} />
                     </div>
                 </div>
                 <div style={{ minWidth: 0 }}>
                     <h3 style={{ fontSize: '1.125rem', marginBottom: '1rem', color: 'var(--secondary-color)', fontWeight: '600' }}>Pace Trend</h3>
                     <div style={{ height: '300px' }}>
-                        <Line data={paceData} options={{ ...paceOptions, maintainAspectRatio: false }} />
+                        <Bar data={paceData} options={{ ...paceOptions, maintainAspectRatio: false }} />
                     </div>
                 </div>
             </div>

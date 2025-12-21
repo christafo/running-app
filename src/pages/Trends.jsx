@@ -3,7 +3,7 @@ import AnalyticsCharts from '../components/AnalyticsCharts';
 import { TrendingUp } from 'lucide-react';
 
 const Trends = () => {
-    const { runs } = useRuns();
+    const { runs, routes } = useRuns();
 
     return (
         <div>
@@ -16,7 +16,7 @@ const Trends = () => {
                 {runs.length === 0 ? (
                     <p style={{ color: 'var(--text-secondary)', margin: 0 }}>No runs logged yet. Start logging runs to see weekly trends.</p>
                 ) : (
-                    <AnalyticsCharts runs={runs} />
+                    <AnalyticsCharts runs={runs} routes={routes} />
                 )}
             </div>
         </div>
