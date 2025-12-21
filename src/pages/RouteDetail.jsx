@@ -3,6 +3,7 @@ import { useRuns } from '../context/RunContext';
 import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet';
 import { useState, useEffect } from 'react';
 import { Map, MapPin, ArrowLeft, TrendingUp, Clock, History, Award } from 'lucide-react';
+import { formatLocalDate } from '../utils/dateUtils';
 
 // Reusing helper components from Routes.jsx
 const MapBounds = ({ coordinates }) => {
@@ -165,7 +166,7 @@ const RouteDetail = () => {
                                 ) : (
                                     routeRuns.map(run => (
                                         <tr key={run.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                                            <td style={{ padding: '0.75rem' }}>{new Date(run.date).toLocaleDateString()}</td>
+                                            <td style={{ padding: '0.75rem' }}>{formatLocalDate(run.date)}</td>
                                             <td style={{ padding: '0.75rem', textAlign: 'right' }}>{run.duration}</td>
                                             <td style={{ padding: '0.75rem', textAlign: 'right' }}>{run.pace}/km</td>
                                             <td style={{ padding: '0.75rem', textAlign: 'center' }}>

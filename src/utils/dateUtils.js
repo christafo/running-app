@@ -41,3 +41,27 @@ export const getStartOfWeek = (dateInput) => {
     const diff = date.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
     return new Date(date.setDate(diff));
 };
+
+/**
+ * Format a date string to local date string without timezone conversion
+ * Prevents YYYY-MM-DD from being parsed as UTC and shifted to previous day
+ * @param {string} dateInput - Date string in YYYY-MM-DD format
+ * @param {object} options - Intl.DateTimeFormat options
+ * @returns {string} Formatted date string
+ */
+export const formatLocalDate = (dateInput, options = {}) => {
+    if (!dateInput) return '';
+
+    let date;
+    if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+        // Parse manually to avoid UTC shift
+        const [y, m, d] = dateInput.split('-').map(Number);
+        date = new Date(y, m - 1, d);
+    } else {
+        date = new Date(dateInput);
+    }
+
+    if (isNaN(date.getTime())) return 'Invalid Date';
+
+    return date.toLocaleDateString(undefined, options);
+};
