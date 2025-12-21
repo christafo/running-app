@@ -3,15 +3,13 @@ import { Trash2, Upload, Edit3, Check, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getWeekIdentifier } from '../utils/dateUtils';
 import { useState } from 'react';
+import { EFFORT_LEVELS, getEffortEmoji } from '../constants/effort';
+import { useRouteHelpers } from '../hooks/useRouteHelpers';
 
 const RunHistory = () => {
     const { runs, routes, deleteRun, updateRun } = useRuns();
     const [editingCell, setEditingCell] = useState(null); // { runId, field }
-
-    const getRouteName = (routeId) => {
-        const route = routes.find(r => r.id === routeId);
-        return route ? route.name : 'Select Route...';
-    };
+    const { getRouteName } = useRouteHelpers(routes);
 
     const handleRouteChange = async (runId, newRouteId) => {
         await updateRun(runId, { route_id: newRouteId });
@@ -26,14 +24,6 @@ const RunHistory = () => {
     const getWeekNumber = (dateString) => {
         return getWeekIdentifier(dateString);
     };
-
-    const effortLevels = [
-        { value: '1', label: '😌 Very Easy' },
-        { value: '2', label: '🙂 Easy' },
-        { value: '3', label: '😐 Moderate' },
-        { value: '4', label: '😓 Hard' },
-        { value: '5', label: '🥵 Very Hard' }
-    ];
 
     return (
         <div>
@@ -130,13 +120,13 @@ const RunHistory = () => {
                                                 }}
                                             >
                                                 <option value="">-</option>
-                                                {effortLevels.map(lvl => (
-                                                    <option key={lvl.value} value={lvl.value}>{lvl.label}</option>
+                                                {EFFORT_LEVELS.map(lvl => (
+                                                    <option key={lvl.value} value={lvl.value}>{lvl.emoji} {lvl.label}</option>
                                                 ))}
                                             </select>
                                         ) : (
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'center' }}>
-                                                <span>{run.effort ? effortLevels.find(l => l.value === String(run.effort))?.label.split(' ')[0] : '-'}</span>
+                                                <span>{getEffortEmoji(run.effort)}</span>
                                                 <Edit3 size={12} style={{ color: 'var(--text-secondary)', opacity: 0.4 }} />
                                             </div>
                                         )}

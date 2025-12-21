@@ -17,6 +17,7 @@ import { getWeekIdentifier } from '../utils/dateUtils';
 import { ArrowUpRight, ArrowDownRight, Minus, Calendar } from 'lucide-react';
 import { useState } from 'react';
 import { subWeeks, subMonths, subYears, isAfter, parseISO } from 'date-fns';
+import { useRouteHelpers } from '../hooks/useRouteHelpers';
 
 ChartJS.register(
     CategoryScale,
@@ -34,6 +35,7 @@ ChartJS.register(
 const AnalyticsCharts = ({ runs, routes }) => {
     // Date range state
     const [dateRange, setDateRange] = useState('last4weeks');
+    const { getRouteName } = useRouteHelpers(routes);
 
     // Filter runs by date range
     const getFilteredRuns = () => {
@@ -204,13 +206,6 @@ const AnalyticsCharts = ({ runs, routes }) => {
                 fill: false,
             },
         ],
-    };
-
-    // Get route name helper
-    const getRouteName = (routeId) => {
-        if (!routes) return 'Unknown';
-        const route = routes.find(r => r.id === routeId);
-        return route ? route.name : 'No route';
     };
 
     const options = {
