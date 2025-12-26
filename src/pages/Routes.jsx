@@ -1,10 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { useRuns } from '../context/RunContext';
 import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Map, ExternalLink, Plus, Loader2, Edit2, Check, X, MapPin } from 'lucide-react';
 import L from 'leaflet';
 import { parseDurationToSeconds } from '../utils/calculations';
+import { parseGPX } from '../services/gpx';
+import { fetchLocationName } from '../services/location';
 
 // Fix for default Leaflet icon not showing
 delete L.Icon.Default.prototype._getIconUrl;
@@ -20,10 +22,7 @@ const MapBounds = ({ coordinates }) => {
     useEffect(() => {
         if (coordinates && coordinates.length > 0) {
             map.fitBounds(coordinates, { padding: [20, 20] });
-            // Force a resize check after bounds are fit
-            setTimeout(() => {
-                map.invalidateSize();
-            }, 100);
+            setTimeout(() => map.invalidateSize(), 100);
         }
     }, [coordinates, map]);
     return null;
@@ -33,9 +32,7 @@ const MapBounds = ({ coordinates }) => {
 const ResizeMap = () => {
     const map = useMap();
     useEffect(() => {
-        setTimeout(() => {
-            map.invalidateSize();
-        }, 200);
+        setTimeout(() => map.invalidateSize(), 200);
     }, [map]);
     return null;
 };
@@ -46,7 +43,6 @@ const RoutesPage = () => {
 
     const [isAdding, setIsAdding] = useState(false);
     const [newRouteName, setNewRouteName] = useState('');
-    const [gpxFile, setGpxFile] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [calculatedDistance, setCalculatedDistance] = useState(null);
     const [coordinates, setCoordinates] = useState([]);
@@ -54,40 +50,11 @@ const RoutesPage = () => {
     const [editingRouteId, setEditingRouteId] = useState(null);
     const [editName, setEditName] = useState('');
 
-    // Reverse Geocoding Helper
-    const fetchLocation = async (lat, lon) => {
-        try {
-            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`, {
-                headers: {
-                    'Accept-Language': 'en',
-                    'User-Agent': 'RunningApp/1.0'
-                }
-            });
-            const data = await response.json();
-            if (data.address) {
-                const city = data.address.city || data.address.town || data.address.village || data.address.suburb || '';
-                const neighborhood = data.address.neighbourhood || data.address.suburb || '';
-                const state = data.address.state || '';
-
-                let locationParts = [];
-                if (neighborhood) locationParts.push(neighborhood);
-                if (city && city !== neighborhood) locationParts.push(city);
-                if (state) locationParts.push(state);
-
-                return locationParts.join(', ');
-            }
-        } catch (error) {
-            console.error('Error fetching location:', error);
-        }
-        return null;
-    };
-
     // Helper: Calculate Stats for a specific route
-    const getRouteStats = (routeId) => {
+    const getRouteStats = useCallback((routeId) => {
         const routeRuns = runs.filter(r => r.route_id === routeId);
         if (routeRuns.length === 0) return null;
 
-        // Ensure total_seconds is calculated for all runs if missing (fallback for legacy or manual data)
         const processedRuns = routeRuns.map(run => {
             if (!run.total_seconds || run.total_seconds <= 0) {
                 return { ...run, total_seconds: parseDurationToSeconds(run.duration) };
@@ -95,22 +62,19 @@ const RoutesPage = () => {
             return run;
         });
 
-        const totalRuns = processedRuns.length;
         const lastRun = processedRuns[0];
-
-        // Best Time (lowest total_seconds)
         const validRuns = processedRuns.filter(r => r.total_seconds > 0);
         const bestRun = validRuns.length > 0
             ? validRuns.reduce((prev, curr) => (prev.total_seconds < curr.total_seconds ? prev : curr))
             : null;
 
         return {
-            totalRuns,
+            totalRuns: processedRuns.length,
             lastRunDate: new Date(lastRun.date).toLocaleDateString(),
             bestTime: bestRun ? bestRun.duration : '-',
             bestPace: bestRun ? bestRun.pace : '-',
         };
-    };
+    }, [runs]);
 
     const handleDelete = async (id, name) => {
         if (window.confirm(`Are you sure you want to delete route "${name}"? This action cannot be undone.`)) {
@@ -128,96 +92,31 @@ const RoutesPage = () => {
         if (window.confirm('Are you sure you want to delete ALL routes? This will also unlink them from all runs in your history.')) {
             await clearAllRoutes();
         }
-    }
-
-    const startEditing = (route) => {
-        setEditingRouteId(route.id);
-        setEditName(route.name);
     };
-
-    const handleLogRun = (routeId) => {
-        navigate('/', { state: { routeId } });
-    };
-
-    // Haversine formula to calculate distance between two points on Earth
-    const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
-        var R = 6371; // Radius of the earth in km
-        var dLat = deg2rad(lat2 - lat1);
-        var dLon = deg2rad(lon2 - lon1);
-        var a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        var d = R * c; // Distance in km
-        return d;
-    }
-
-    const deg2rad = (deg) => {
-        return deg * (Math.PI / 180)
-    }
 
     const handleFileChange = async (e) => {
         const file = e.target.files[0];
         if (file) {
-            setGpxFile(file);
             setIsProcessing(true);
-
             try {
                 const text = await file.text();
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(text, "text/xml");
+                const { coordinates: parsedCoords, distance } = parseGPX(text);
 
-                // Find all track points
-                const trkpts = xmlDoc.getElementsByTagName("trkpt");
-
-                if (trkpts.length < 2) {
-                    alert("GPX file does not contain enough data points.");
-                    setGpxFile(null);
-                    setIsProcessing(false);
-                    return;
-                }
-
-                let totalDist = 0;
-                const parsedCoordinates = [];
-
-                for (let i = 0; i < trkpts.length; i++) {
-                    const p = trkpts[i];
-                    const lat = parseFloat(p.getAttribute("lat"));
-                    const lon = parseFloat(p.getAttribute("lon"));
-                    parsedCoordinates.push([lat, lon]);
-                }
-
-                for (let i = 0; i < trkpts.length - 1; i++) {
-                    const p1 = trkpts[i];
-                    const p2 = trkpts[i + 1];
-
-                    const lat1 = parseFloat(p1.getAttribute("lat"));
-                    const lon1 = parseFloat(p1.getAttribute("lon"));
-                    const lat2 = parseFloat(p2.getAttribute("lat"));
-                    const lon2 = parseFloat(p2.getAttribute("lon"));
-
-                    totalDist += getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2);
-                }
-
-                setCalculatedDistance(totalDist);
-                setCoordinates(parsedCoordinates);
-                console.log('GPX Parsed:', { points: parsedCoordinates.length, dist: totalDist });
+                setCalculatedDistance(distance);
+                setCoordinates(parsedCoords);
 
                 // Fetch Location
-                const firstPoint = parsedCoordinates[0];
-                const loc = await fetchLocation(firstPoint[0], firstPoint[1]);
+                const firstPoint = parsedCoords[0];
+                const loc = await fetchLocationName(firstPoint[0], firstPoint[1]);
                 if (loc) setDetectedLocation(loc);
 
                 // Auto-suggest name if empty
                 if (!newRouteName) {
                     setNewRouteName(file.name.replace('.gpx', ''));
                 }
-
             } catch (error) {
-                console.error("Error parsing GPX:", error);
-                alert("Failed to parse GPX file.");
-                setGpxFile(null);
+                console.error("Error processing GPX:", error);
+                alert(error.message || "Failed to parse GPX file.");
             } finally {
                 setIsProcessing(false);
             }
@@ -228,12 +127,9 @@ const RoutesPage = () => {
         e.preventDefault();
         if (!newRouteName || calculatedDistance === null) return;
 
-        console.log('Saving route with coordinates:', coordinates?.length);
-
         await addRoute({
             name: newRouteName,
             distance: calculatedDistance,
-            mapLink: '', // Legacy support
             coordinates: coordinates,
             location: detectedLocation
         });
@@ -241,7 +137,6 @@ const RoutesPage = () => {
         // Reset Form
         setIsAdding(false);
         setNewRouteName('');
-        setGpxFile(null);
         setCalculatedDistance(null);
         setCoordinates([]);
         setDetectedLocation(null);

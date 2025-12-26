@@ -1,42 +1,22 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import { useSupabase } from '../hooks/useSupabase';
+import { useRunData } from '../hooks/useRunData';
+import { useRouteData, INITIAL_ROUTES } from '../hooks/useRouteData';
 
 const RunContext = createContext();
 
-const INITIAL_ROUTES = [
-    { id: '1', name: 'Freshmarket > Marina Loop', distance: 4.39, map_link: 'https://onthegomap.com/s/j26o9f49' },
-    { id: '2', name: 'Kennedy Park > Marina Loop', distance: 6.4, map_link: 'https://onthegomap.com/s/919f3ltf' },
-    { id: '3', name: 'Main highway > Ingrham Park', distance: 8.22, map_link: 'https://onthegomap.com/s/domqkvq8' },
-    { id: '4', name: 'Freshmarket > Marina > Main', distance: 6.15, map_link: '' },
-    { id: '5', name: 'Freshmarket > Marina > Grand', distance: 5.07, map_link: '' },
-];
-
 export const RunProvider = ({ children }) => {
-    const [session, setSession] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [runs, setRuns] = useState([]);
-    const [routes, setRoutes] = useState([]);
+    const { session, isLoading } = useSupabase();
     const [dbHealth, setDbHealth] = useState({ ok: true, missingColumns: [] });
 
-    // Auth State Listener
-    useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setIsLoading(false);
-        });
+    // Internal hook for run state management
+    const runData = useRunData(session, setDbHealth);
+    const { runs, setRuns, fetchRuns, migrateLocalData } = runData;
 
-        const {
-            data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-            if (!session) {
-                setRuns([]); // Clear data on logout
-                setRoutes(INITIAL_ROUTES); // Reset to defaults
-            }
-        });
-
-        return () => subscription.unsubscribe();
-    }, []);
+    // Internal hook for route state management 
+    // Pass setRuns from useRunData for unlinking routes from runs
+    const routeData = useRouteData(session, setDbHealth, setRuns);
+    const { routes, setRoutes, fetchRoutes } = routeData;
 
     // Fetch Data when Session Configured
     useEffect(() => {
@@ -44,284 +24,12 @@ export const RunProvider = ({ children }) => {
             fetchRuns();
             fetchRoutes();
             migrateLocalData();
+        } else {
+            // Reset state on logout
+            setRuns([]);
+            setRoutes(INITIAL_ROUTES);
         }
-    }, [session]);
-
-    const fetchRuns = async () => {
-        try {
-            // Health Check for Runs (proactive)
-            const { error: healthError } = await supabase
-                .from('runs')
-                .select('effort, total_seconds')
-                .limit(1);
-
-            if (healthError && healthError.message.includes('column')) {
-                const missing = [];
-                if (healthError.message.includes('effort')) missing.push('effort (runs table)');
-                if (healthError.message.includes('total_seconds')) missing.push('total_seconds (runs table)');
-                if (missing.length > 0) {
-                    setDbHealth(prev => ({ ok: false, missingColumns: [...new Set([...prev.missingColumns, ...missing])] }));
-                }
-            }
-
-            const { data, error } = await supabase
-                .from('runs')
-                .select('*')
-                .order('date', { ascending: false });
-
-            if (error) throw error;
-            if (data) setRuns(data);
-        } catch (error) {
-            console.error('Error fetching runs:', error.message);
-        }
-    };
-
-    const fetchRoutes = async () => {
-        try {
-            // Health Check for Routes (proactive)
-            const { error: healthError } = await supabase
-                .from('routes')
-                .select('coordinates, location')
-                .limit(1);
-
-            if (healthError && healthError.message.includes('column')) {
-                const missing = [];
-                if (healthError.message.includes('coordinates')) missing.push('coordinates (routes table)');
-                if (healthError.message.includes('location')) missing.push('location (routes table)');
-                if (missing.length > 0) {
-                    setDbHealth(prev => ({ ok: false, missingColumns: [...new Set([...prev.missingColumns, ...missing])] }));
-                }
-            }
-
-            // Real fetch (all)
-            const { data: allData, error } = await supabase.from('routes').select('*');
-            if (error) throw error;
-
-            if (allData && allData.length > 0) {
-                setRoutes(allData);
-            } else {
-                setRoutes(INITIAL_ROUTES);
-            }
-        } catch (error) {
-            console.error('Error fetching routes:', error.message);
-        }
-    };
-
-    const migrateLocalData = async () => {
-        const localRuns = localStorage.getItem('runs');
-        if (localRuns) {
-            try {
-                const parsedRuns = JSON.parse(localRuns);
-                if (parsedRuns.length > 0) {
-                    // Map to Snake Case Schema
-                    const runsToUpload = parsedRuns.map(r => ({
-                        user_id: session.user.id,
-                        date: r.date,
-                        route_id: r.routeId,
-                        distance: r.distance,
-                        duration: r.duration,
-                        pace: r.pace,
-                        total_seconds: r.totalSeconds,
-                        notes: r.notes
-                    }));
-
-                    const { error } = await supabase.from('runs').insert(runsToUpload);
-                    if (!error) {
-                        console.log('Migrated runs to Supabase');
-                        localStorage.removeItem('runs'); // Clear local to avoid re-migration
-                        fetchRuns(); // Refresh
-                    }
-                }
-            } catch (e) {
-                console.error("Migration failed", e);
-            }
-        }
-    };
-
-    const addRun = async (runData) => {
-        if (!session) return;
-
-        // Optimistic Update
-        // setRuns(prev => [runData, ...prev]);
-
-        try {
-            const payload = {
-                user_id: session.user.id,
-                date: runData.date,
-                route_id: runData.routeId || null,
-                distance: runData.distance,
-                duration: runData.duration,
-                pace: runData.pace,
-                total_seconds: runData.totalSeconds,
-                notes: runData.notes || null,
-                effort: runData.effort ? parseInt(runData.effort) : null
-            };
-
-            const { data, error } = await supabase
-                .from('runs')
-                .insert([payload])
-                .select()
-                .single();
-
-            if (error) throw error;
-            if (data) {
-                setRuns(prev => [data, ...prev].sort((a, b) => new Date(b.date) - new Date(a.date)));
-            }
-        } catch (error) {
-            console.error('Error adding run:', error);
-            alert(`Failed to save run: ${error.message || 'Unknown error'}`);
-        }
-    };
-
-    const updateRun = async (runId, updates) => {
-        if (!session) return;
-        try {
-            // Filter out undefined values to prevent state corruption
-            const cleanUpdates = Object.entries(updates).reduce((acc, [key, value]) => {
-                if (value !== undefined) {
-                    acc[key] = value;
-                }
-                return acc;
-            }, {});
-
-            const payload = {
-                ...cleanUpdates,
-                // Ensure number types for effort and total_seconds if they are passed
-                effort: cleanUpdates.effort ? parseInt(cleanUpdates.effort) : cleanUpdates.effort,
-                total_seconds: cleanUpdates.total_seconds ? parseInt(cleanUpdates.total_seconds) : cleanUpdates.total_seconds
-            };
-
-            const { data, error } = await supabase
-                .from('runs')
-                .update(payload)
-                .eq('id', runId)
-                .select()
-                .maybeSingle();
-
-            if (error) throw error;
-
-            // Update local state with the returned data or the payload
-            // Use data if available (preferred), otherwise use payload
-            const updatedRun = data || payload;
-            setRuns(prev => prev.map(run =>
-                run.id === runId ? { ...run, ...updatedRun } : run
-            ));
-        } catch (error) {
-            console.error('Error updating run:', error);
-            alert(`Failed to update run: ${error.message || 'Unknown error'}`);
-        }
-    };
-
-    const deleteRun = async (id) => {
-        if (!session) return;
-        try {
-            const { error } = await supabase.from('runs').delete().eq('id', id);
-            if (error) throw error;
-            setRuns(prev => prev.filter(run => run.id !== id));
-        } catch (error) {
-            console.error('Error deleting run:', error);
-        }
-    };
-
-    const addRoute = async (routeData) => {
-        if (!session) return;
-        try {
-            const payload = {
-                user_id: session.user.id,
-                name: routeData.name,
-                distance: routeData.distance,
-                map_link: routeData.map_link || routeData.mapLink || '',
-                coordinates: routeData.coordinates || null,
-                location: routeData.location || null
-            };
-
-            const { data, error } = await supabase
-                .from('routes')
-                .insert([payload])
-                .select()
-                .single();
-
-            if (error) throw error;
-            if (data) {
-                setRoutes(prev => [data, ...prev]);
-            }
-        } catch (error) {
-            console.error('Error adding route:', error);
-        }
-    };
-
-    const deleteRoute = async (id) => {
-        if (!session) return;
-        try {
-            // Unlink from runs first
-            const { error: unlinkError } = await supabase
-                .from('runs')
-                .update({ route_id: null })
-                .eq('route_id', id);
-
-            if (unlinkError) throw unlinkError;
-
-            // Delete route
-            const { error } = await supabase.from('routes').delete().eq('id', id);
-            if (error) throw error;
-
-            setRoutes(prev => prev.filter(r => r.id !== id));
-            // Update local runs state
-            setRuns(prev => prev.map(run => run.route_id === id ? { ...run, route_id: null } : run));
-
-        } catch (error) {
-            console.error('Error deleting route:', error);
-            alert('Failed to delete route.');
-        }
-    };
-
-    const clearAllRoutes = async () => {
-        if (!session) return;
-        try {
-            // Unlink all from runs
-            const { error: unlinkError } = await supabase
-                .from('runs')
-                .update({ route_id: null })
-                .eq('user_id', session.user.id);
-
-            if (unlinkError) throw unlinkError;
-
-            // Delete all routes
-            const { error } = await supabase
-                .from('routes')
-                .delete()
-                .eq('user_id', session.user.id);
-
-            if (error) throw error;
-
-            setRoutes([]); // Or back to INITIAL_ROUTES if we prefer, but user said "clear out any routes"
-            setRuns(prev => prev.map(run => ({ ...run, route_id: null })));
-
-        } catch (error) {
-            console.error('Error clearing routes:', error);
-            alert('Failed to clear routes.');
-        }
-    };
-
-    const updateRoute = async (id, updates) => {
-        if (!session) return;
-        try {
-            const { data, error } = await supabase
-                .from('routes')
-                .update(updates)
-                .eq('id', id)
-                .select()
-                .single();
-
-            if (error) throw error;
-            if (data) {
-                setRoutes(prev => prev.map(r => r.id === id ? data : r));
-            }
-        } catch (error) {
-            console.error('Error updating route:', error);
-            alert('Failed to update route.');
-        }
-    };
+    }, [session, fetchRuns, fetchRoutes, migrateLocalData, setRuns, setRoutes]);
 
     const getRunStats = () => {
         const totalRuns = runs.length;
@@ -335,16 +43,9 @@ export const RunProvider = ({ children }) => {
     const value = {
         session,
         isLoading,
-        runs,
-        routes,
         dbHealth,
-        addRun,
-        updateRun,
-        deleteRun,
-        addRoute,
-        deleteRoute,
-        clearAllRoutes,
-        updateRoute,
+        ...runData,
+        ...routeData,
         getRunStats
     };
 
