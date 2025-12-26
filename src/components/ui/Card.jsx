@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types';
 
 /**
  * Reusable Card component with consistent styling
@@ -24,8 +23,3 @@ export const Card = ({ children, className = '', style = {}, ...props }) => {
     );
 };
 
-Card.propTypes = {
-    children: PropTypes.node.isRequired,
-    className: PropTypes.string,
-    style: PropTypes.object
-};

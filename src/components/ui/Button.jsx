@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types';
 
 /**
  * Reusable Button component with consistent styling
@@ -64,9 +63,3 @@ export const Button = ({
     );
 };
 
-Button.propTypes = {
-    variant: PropTypes.oneOf(['primary', 'secondary', 'danger']),
-    size: PropTypes.oneOf(['sm', 'md', 'lg']),
-    children: PropTypes.node.isRequired,
-    className: PropTypes.string
-};

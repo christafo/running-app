@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types';
 
 /**
  * Reusable Input component with label and error support
@@ -49,9 +48,3 @@ export const Input = ({
     );
 };
 
-Input.propTypes = {
-    label: PropTypes.string,
-    error: PropTypes.string,
-    className: PropTypes.string,
-    containerStyle: PropTypes.object
-};
