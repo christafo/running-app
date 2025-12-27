@@ -36,6 +36,10 @@ export const DistanceChart = ({ sortedRuns, routes }) => {
         ],
     };
 
+    const distances = sortedRuns.map(r => parseFloat(r.distance));
+    const minD = Math.min(...distances);
+    const maxD = Math.max(...distances);
+
     const options = {
         responsive: true,
         maintainAspectRatio: false,
@@ -69,7 +73,12 @@ export const DistanceChart = ({ sortedRuns, routes }) => {
         },
         scales: {
             x: { grid: { display: false } },
-            y: { grid: { color: '#f1f5f9' }, beginAtZero: true }
+            y: {
+                grid: { color: '#f1f5f9' },
+                beginAtZero: false,
+                min: Math.max(0, Math.floor(minD - 1)),
+                max: Math.ceil(maxD + 1)
+            }
         }
     };
 

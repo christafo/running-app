@@ -44,6 +44,15 @@ export const PaceChart = ({ sortedRuns, routes }) => {
         ],
     };
 
+    const paces = sortedRuns.map(r => {
+        if (!r.pace || !r.pace.includes(':')) return avgPaceDecimal;
+        const [m, s] = r.pace.split(':').map(Number);
+        return m + s / 60;
+    }).filter(p => p > 0);
+
+    const minP = Math.min(...paces);
+    const maxP = Math.max(...paces);
+
     const options = {
         responsive: true,
         maintainAspectRatio: false,
@@ -84,6 +93,8 @@ export const PaceChart = ({ sortedRuns, routes }) => {
             y: {
                 grid: { color: '#f1f5f9' },
                 beginAtZero: false,
+                min: Math.max(0, minP - 0.25), // 15 seconds buffer
+                max: maxP + 0.25,
                 ticks: {
                     callback: (value) => {
                         const m = Math.floor(value);
@@ -96,7 +107,7 @@ export const PaceChart = ({ sortedRuns, routes }) => {
     };
 
     return (
-        <div style={{ height: '300px' }}>
+        <div style={{ height: '350px', paddingBottom: '10px' }}>
             <h3 style={{ fontSize: '1.125rem', marginBottom: '1rem', color: 'var(--secondary-color)', fontWeight: '600' }}>Pace Trend</h3>
             <Bar data={data} options={options} />
         </div>
